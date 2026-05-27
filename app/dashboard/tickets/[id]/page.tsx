@@ -1,19 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { use } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { AddPartDialog } from "@/components/add-part-dialog"
-import { ArrowLeft, Download, Edit, Loader2, Plus, Trash2 } from "lucide-react"
+import { ArrowLeft, Download, Loader2, Plus, Save, Trash2 } from "lucide-react"
 
 interface TicketData {
   id: string
@@ -31,8 +30,8 @@ interface TicketData {
   paymentStatus: string
   paymentAccountId: number | null
   paymentAccountName: string | null
+  amountPaid: string
   laborCost: string | null
-  estimatedCompletion: string | null
   createdAt: string
 }
 
@@ -51,16 +50,10 @@ interface Account {
   type: string
 }
 
-const paymentStatusOptions = [
-  { value: "unpaid", label: "Unpaid" },
-  { value: "partially_paid", label: "Partially Paid" },
-  { value: "paid", label: "Paid" },
-]
-
-const paymentStatusBadgeVariant: Record<string, "secondary" | "default" | "outline"> = {
-  unpaid: "secondary",
-  partially_paid: "outline",
-  paid: "default",
+interface StatusHistoryEntry {
+  id: number
+  status: string
+  changedAt: string
 }
 
 const statusOptions = [
@@ -73,6 +66,12 @@ const statusOptions = [
   { value: "cancelled", label: "Cancelled" },
 ]
 
+const paymentStatusOptions = [
+  { value: "unpaid", label: "Unpaid" },
+  { value: "partially_paid", label: "Partially Paid" },
+  { value: "paid", label: "Paid" },
+]
+
 function formatDate(d: string | null) {
   if (!d) return "—"
   return new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
@@ -82,104 +81,105 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const { id } = use(params)
   const [ticket, setTicket] = useState<TicketData | null>(null)
   const [items, setItems] = useState<TicketItem[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editDescription, setEditDescription] = useState("")
-  const [editImei, setEditImei] = useState("")
-  const [editPasscode, setEditPasscode] = useState("")
-  const [editLaborCost, setEditLaborCost] = useState("")
   const [saving, setSaving] = useState(false)
   const [showAddPart, setShowAddPart] = useState(false)
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const [error, setError] = useState("")
+
+  const [draftStatus, setDraftStatus] = useState("")
+  const [draftPaymentStatus, setDraftPaymentStatus] = useState("")
+  const [draftPaymentAccountId, setDraftPaymentAccountId] = useState<string>("none")
+  const [draftLaborCost, setDraftLaborCost] = useState("")
+  const [draftAmountPaid, setDraftAmountPaid] = useState("")
+  const [draftImei, setDraftImei] = useState("")
+  const [draftPasscode, setDraftPasscode] = useState("")
+  const [draftDescription, setDraftDescription] = useState("")
+
+  const computeTotal = useCallback(() => {
+    const partsSum = items.reduce(
+      (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
+      0
+    )
+    return partsSum + parseFloat(draftLaborCost || "0")
+  }, [items, draftLaborCost])
 
   useEffect(() => {
     fetch(`/api/tickets/${id}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Not found")
+        return res.json()
+      })
       .then((data) => {
         setTicket(data.ticket)
         setItems(data.items)
-        setEditDescription(data.ticket.problemDescription ?? "")
-        setEditImei(data.ticket.imei ?? "")
-        setEditPasscode(data.ticket.passcode ?? "")
-        setEditLaborCost(data.ticket.laborCost ?? "")
+        setStatusHistory(data.statusHistory ?? [])
+        setDraftStatus(data.ticket.status)
+        setDraftPaymentStatus(data.ticket.paymentStatus)
+        setDraftPaymentAccountId(data.ticket.paymentAccountId ? String(data.ticket.paymentAccountId) : "none")
+        setDraftLaborCost(data.ticket.laborCost ?? "")
+        setDraftAmountPaid(data.ticket.amountPaid ?? "0")
+        setDraftImei(data.ticket.imei ?? "")
+        setDraftPasscode(data.ticket.passcode ?? "")
+        setDraftDescription(data.ticket.problemDescription ?? "")
       })
       .catch(() => {})
       .finally(() => setLoading(false))
 
     fetch("/api/accounts")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error()
+        return res.json()
+      })
       .then((data) => setAccounts(data.accounts))
       .catch(() => {})
   }, [id])
 
-  const updateStatus = async (newStatus: string) => {
-    if (!ticket) return
+  const hasChanges = ticket && (
+    draftStatus !== ticket.status ||
+    draftPaymentStatus !== ticket.paymentStatus ||
+    draftPaymentAccountId !== (ticket.paymentAccountId ? String(ticket.paymentAccountId) : "none") ||
+    draftLaborCost !== (ticket.laborCost ?? "") ||
+    draftAmountPaid !== (ticket.amountPaid ?? "0") ||
+    draftImei !== (ticket.imei ?? "") ||
+    draftPasscode !== (ticket.passcode ?? "") ||
+    draftDescription !== (ticket.problemDescription ?? "")
+  )
+
+  const handleSave = async () => {
+    if (!ticket || !hasChanges) return
     setSaving(true)
+    setError("")
     try {
-      const res = await fetch(`/api/tickets/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      })
-      if (res.ok) {
-        setTicket({ ...ticket, status: newStatus })
+      const body: Record<string, any> = {
+        status: draftStatus,
+        paymentStatus: draftPaymentStatus,
+        paymentAccountId: draftPaymentAccountId === "none" ? null : Number(draftPaymentAccountId),
+        laborCost: draftLaborCost || null,
+        imei: draftImei || null,
+        passcode: draftPasscode || null,
+        problemDescription: draftDescription || null,
       }
-    } catch {}
-    setSaving(false)
-  }
-
-  const saveEdits = async () => {
-    if (!ticket) return
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/tickets/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          problemDescription: editDescription || null,
-          imei: editImei || null,
-          passcode: editPasscode || null,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setTicket({ ...ticket, ...data.ticket })
+      if (draftPaymentStatus === "partially_paid") {
+        body.amountPaid = draftAmountPaid || "0"
       }
-    } catch {}
-    setSaving(false)
-    setIsEditing(false)
-  }
-
-  const saveLaborCost = async () => {
-    if (!ticket) return
-    try {
-      const res = await fetch(`/api/tickets/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ laborCost: editLaborCost || null }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setTicket((prev) => prev ? { ...prev, ...data.ticket } : null)
-      }
-    } catch {}
-  }
-
-  const updatePayment = async (paymentStatus: string, paymentAccountId?: number | null) => {
-    if (!ticket) return
-    const body: Record<string, any> = { paymentStatus }
-    if (paymentAccountId !== undefined) body.paymentAccountId = paymentAccountId
-    try {
       const res = await fetch(`/api/tickets/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
-      if (res.ok) {
-        const data = await res.json()
-        setTicket((prev) => prev ? { ...prev, ...data.ticket } : null)
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to save changes")
+        setSaving(false)
+        return
       }
-    } catch {}
+      setTicket({ ...ticket, ...data.ticket })
+    } catch {
+      setError("Failed to save changes")
+    }
+    setSaving(false)
   }
 
   const removePart = async (itemId: number) => {
@@ -190,9 +190,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemId }),
       })
-      if (res.ok) {
-        setItems((prev) => prev.filter((i) => i.id !== itemId))
-      }
+      if (res.ok) setItems((prev) => prev.filter((i) => i.id !== itemId))
     } catch {}
   }
 
@@ -232,7 +230,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">Ticket {id}</h1>
-              <TicketStatusBadge status={ticket.status} />
+              <TicketStatusBadge status={draftStatus} />
             </div>
             <p className="text-muted-foreground">{ticket.brand} {ticket.model} — {ticket.customerName}</p>
           </div>
@@ -244,35 +242,31 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               Invoice
             </Button>
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (isEditing) saveEdits()
-              else setIsEditing(true)
-            }}
-            disabled={saving}
-          >
+          <Button onClick={handleSave} disabled={saving || !hasChanges}>
             {saving ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
             ) : (
-              <><Edit className="h-4 w-4 mr-2" />{isEditing ? "Save" : "Edit"}</>
+              <><Save className="h-4 w-4 mr-2" />Save Changes</>
             )}
           </Button>
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Repair Details</CardTitle>
             <CardDescription>Device and issue information.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
+              <div className="sm:col-span-2">
                 <Label className="text-muted-foreground text-xs">Status</Label>
-                <Select value={ticket.status} onValueChange={updateStatus}>
+                <Select value={draftStatus} onValueChange={setDraftStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -284,99 +278,87 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 </Select>
               </div>
               <div>
-                <Label className="text-muted-foreground text-xs">Estimated Completion</Label>
-                <p className="text-sm font-medium">{formatDate(ticket.estimatedCompletion)}</p>
-              </div>
-              <div>
-                <Label className="text-muted-foreground text-xs">Brand</Label>
-                <p className="text-sm font-medium">{ticket.brand}</p>
-              </div>
-              <div>
-                <Label className="text-muted-foreground text-xs">Model</Label>
-                <p className="text-sm font-medium">{ticket.model}</p>
-              </div>
-              <div>
-                <Label className="text-muted-foreground text-xs">IMEI / Serial</Label>
-                {isEditing ? (
-                  <Input value={editImei} onChange={(e) => setEditImei(e.target.value)} className="mt-1" />
-                ) : (
-                  <p className="text-sm font-medium">{ticket.imei || "—"}</p>
-                )}
+                <Label className="text-muted-foreground text-xs">IMEI</Label>
+                <Input
+                  value={draftImei}
+                  onChange={(e) => setDraftImei(e.target.value)}
+                  placeholder="IMEI number"
+                />
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Passcode</Label>
-                {isEditing ? (
-                  <Input value={editPasscode} onChange={(e) => setEditPasscode(e.target.value)} className="mt-1" />
-                ) : (
-                  <p className="text-sm font-medium">{ticket.passcode ? "****" : "—"}</p>
-                )}
+                <Input
+                  value={draftPasscode}
+                  onChange={(e) => setDraftPasscode(e.target.value)}
+                  placeholder="Device passcode"
+                />
               </div>
             </div>
             <Separator />
             <div>
               <Label className="text-muted-foreground text-xs">Problem Category</Label>
-              <p className="text-sm font-medium capitalize">{ticket.problemCategory ?? "—"}</p>
+              <p className="text-sm font-medium capitalize mt-1">{ticket.problemCategory ?? "—"}</p>
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Problem Description</Label>
-              {isEditing ? (
-                <textarea
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm mt-1"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">{ticket.problemDescription || "—"}</p>
-              )}
+              <textarea
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm mt-1"
+                value={draftDescription}
+                onChange={(e) => setDraftDescription(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer</CardTitle>
-            <CardDescription>Contact information.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <Label className="text-muted-foreground text-xs">Name</Label>
-              <p className="text-sm font-medium">{ticket.customerName}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Phone</Label>
-              <p className="text-sm font-medium">{ticket.customerPhone || "—"}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Email</Label>
-              <p className="text-sm font-medium">{ticket.customerEmail || "—"}</p>
-            </div>
-            <Separator />
-            <div>
-              <Label className="text-muted-foreground text-xs">Created</Label>
-              <p className="text-sm font-medium">{formatDate(ticket.createdAt)}</p>
-            </div>
-            <Separator />
-            <div className="space-y-3">
-              <Label className="text-muted-foreground text-xs">Payment Status</Label>
-              <Select
-                value={ticket.paymentStatus}
-                onValueChange={(v) => updatePayment(v, ticket.paymentAccountId)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentStatusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer</CardTitle>
+              <CardDescription>Contact information.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Name</span>
+                <span className="text-sm font-medium">{ticket.customerName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Phone</span>
+                <span className="text-sm">{ticket.customerPhone || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Email</span>
+                <span className="text-sm">{ticket.customerEmail || "—"}</span>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Created</span>
+                <span className="text-sm">{formatDate(ticket.createdAt)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment</CardTitle>
+              <CardDescription>Status, account, and amount.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label className="text-muted-foreground text-xs">Payment Status</Label>
+                <Select value={draftPaymentStatus} onValueChange={setDraftPaymentStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentStatusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Account</Label>
-                <Select
-                  value={ticket.paymentAccountId ? String(ticket.paymentAccountId) : "none"}
-                  onValueChange={(v) => updatePayment(ticket.paymentStatus, v === "none" ? null : Number(v))}
-                >
+                <Select value={draftPaymentAccountId} onValueChange={setDraftPaymentAccountId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select account" />
                   </SelectTrigger>
@@ -388,6 +370,75 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   </SelectContent>
                 </Select>
               </div>
+            {draftPaymentStatus === "partially_paid" && (
+              <div>
+                <Label className="text-muted-foreground text-xs">Amount Paid (Rs.)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={draftAmountPaid}
+                  onChange={(e) => setDraftAmountPaid(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Remaining: Rs. {Math.max(0, computeTotal() - parseFloat(draftAmountPaid || "0")).toFixed(2)}
+                </p>
+              </div>
+            )}
+            {draftPaymentStatus === "paid" && (
+              <p className="text-xs text-muted-foreground">
+                Full amount (Rs. {computeTotal().toFixed(2)}) will be applied as paid.
+              </p>
+            )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Status Timeline</CardTitle>
+            <CardDescription>History of status changes.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {statusHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No history recorded yet.</p>
+              ) : (
+                statusHistory.map((entry, index) => {
+                  const labels: Record<string, string> = {
+                    received: "Received",
+                    diagnosing: "Diagnosing",
+                    awaiting_parts: "Awaiting Parts",
+                    repairing: "Repairing",
+                    ready_for_pickup: "Ready for Pickup",
+                    completed: "Completed",
+                    cancelled: "Cancelled",
+                  }
+                  return (
+                    <div key={entry.id} className="flex items-start gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary bg-primary text-primary-foreground">
+                          <div className="h-2 w-2 rounded-full bg-current" />
+                        </div>
+                        {index < statusHistory.length - 1 && (
+                          <div className="w-0.5 h-8 bg-muted-foreground/20" />
+                        )}
+                      </div>
+                      <div className="pt-0.5">
+                        <p className="text-sm font-medium">{labels[entry.status] ?? entry.status}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(entry.changedAt).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
             </div>
           </CardContent>
         </Card>
@@ -448,9 +499,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     type="number"
                     min="0"
                     step="0.01"
-                    value={editLaborCost}
-                    onChange={(e) => setEditLaborCost(e.target.value)}
-                    onBlur={() => saveLaborCost()}
+                    value={draftLaborCost}
+                    onChange={(e) => setDraftLaborCost(e.target.value)}
                     className="h-8 w-28"
                   />
                 </TableCell>

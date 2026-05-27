@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { tickets, customers, ticketItems, inventory, accounts } from "@/db/schema"
+import { tickets, customers, ticketItems, inventory, accounts, ticketStatusHistory } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
 
 export async function GET(
@@ -27,8 +27,9 @@ export async function GET(
         paymentStatus: tickets.paymentStatus,
         paymentAccountId: tickets.paymentAccountId,
         paymentAccountName: accounts.name,
+        amountPaid: tickets.amountPaid,
         laborCost: tickets.laborCost,
-        estimatedCompletion: tickets.estimatedCompletion,
+
         createdAt: tickets.createdAt,
       })
       .from(tickets)
@@ -54,7 +55,17 @@ export async function GET(
       .leftJoin(inventory, eq(ticketItems.inventoryId, inventory.id))
       .where(eq(ticketItems.ticketId, id))
 
-    return NextResponse.json({ ticket, items })
+    const statusHistory = await db
+      .select({
+        id: ticketStatusHistory.id,
+        status: ticketStatusHistory.status,
+        changedAt: ticketStatusHistory.changedAt,
+      })
+      .from(ticketStatusHistory)
+      .where(eq(ticketStatusHistory.ticketId, id))
+      .orderBy(ticketStatusHistory.changedAt)
+
+    return NextResponse.json({ ticket, items, statusHistory })
   } catch {
     return NextResponse.json({ error: "Failed to fetch ticket" }, { status: 500 })
   }
@@ -67,12 +78,14 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { status, estimatedCompletion, problemDescription, laborCost, imei, passcode, paymentStatus, paymentAccountId } = body
+    const { status, problemDescription, laborCost, imei, passcode, paymentStatus, paymentAccountId, amountPaid } = body
 
     const [current] = await db
       .select({
+        status: tickets.status,
         paymentStatus: tickets.paymentStatus,
         paymentAccountId: tickets.paymentAccountId,
+        amountPaid: tickets.amountPaid,
         laborCost: tickets.laborCost,
       })
       .from(tickets)
@@ -83,11 +96,32 @@ export async function PUT(
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 })
     }
 
+    const resolvedLaborCost = laborCost !== undefined ? laborCost : current.laborCost
+
+    const items = await db
+      .select({
+        sellingPrice: inventory.sellingPrice,
+        quantityUsed: ticketItems.quantityUsed,
+      })
+      .from(ticketItems)
+      .leftJoin(inventory, eq(ticketItems.inventoryId, inventory.id))
+      .where(eq(ticketItems.ticketId, id))
+
+    const partsTotal = items.reduce(
+      (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
+      0
+    )
+    const resolvedLabor = parseFloat(String(resolvedLaborCost ?? "0"))
+    const totalAmount = partsTotal + resolvedLabor
+
+    const resolvedAmountPaid =
+      paymentStatus === "paid" ? totalAmount
+      : paymentStatus === "unpaid" ? 0
+      : amountPaid !== undefined ? parseFloat(String(amountPaid))
+      : parseFloat(String(current.amountPaid ?? "0"))
+
     const updateData: Record<string, any> = {}
-    if (status) updateData.status = status
-    if (estimatedCompletion !== undefined) {
-      updateData.estimatedCompletion = estimatedCompletion ? new Date(estimatedCompletion) : null
-    }
+    if (status !== undefined) updateData.status = status
     if (problemDescription !== undefined) updateData.problemDescription = problemDescription
     if (laborCost !== undefined) updateData.laborCost = laborCost ? String(laborCost) : null
     if (imei !== undefined) updateData.imei = imei
@@ -96,6 +130,7 @@ export async function PUT(
     if (paymentAccountId !== undefined) {
       updateData.paymentAccountId = paymentAccountId ? Number(paymentAccountId) : null
     }
+    updateData.amountPaid = String(resolvedAmountPaid)
 
     const [ticket] = await db
       .update(tickets)
@@ -103,45 +138,38 @@ export async function PUT(
       .where(eq(tickets.id, id))
       .returning()
 
+    if (status !== undefined && status !== current.status) {
+      await db.insert(ticketStatusHistory).values({
+        ticketId: id,
+        status,
+      })
+    }
+
     const newPaymentStatus = paymentStatus ?? current.paymentStatus
     const newAccountId = paymentAccountId !== undefined
       ? (paymentAccountId ? Number(paymentAccountId) : null)
       : current.paymentAccountId
+    const oldPaidAmount = parseFloat(String(current.amountPaid ?? "0"))
+    const newPaidAmount = resolvedAmountPaid
 
-    const paidChanged = paymentStatus !== undefined && newPaymentStatus !== current.paymentStatus
-    const accountChanged = paymentAccountId !== undefined && newAccountId !== current.paymentAccountId
+    const paymentFieldsChanged =
+      (paymentStatus !== undefined && newPaymentStatus !== current.paymentStatus) ||
+      (paymentAccountId !== undefined && newAccountId !== current.paymentAccountId) ||
+      newPaidAmount !== oldPaidAmount
 
-    if (paidChanged || accountChanged) {
-      const items = await db
-        .select({
-          sellingPrice: inventory.sellingPrice,
-          quantityUsed: ticketItems.quantityUsed,
-        })
-        .from(ticketItems)
-        .leftJoin(inventory, eq(ticketItems.inventoryId, inventory.id))
-        .where(eq(ticketItems.ticketId, id))
+    if (paymentFieldsChanged) {
+      if (current.paymentAccountId && oldPaidAmount > 0) {
+        await db
+          .update(accounts)
+          .set({ balance: sql`${accounts.balance} - ${oldPaidAmount}` })
+          .where(eq(accounts.id, current.paymentAccountId))
+      }
 
-      const partsTotal = items.reduce(
-        (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
-        0
-      )
-      const labor = parseFloat(current.laborCost ?? "0")
-      const totalAmount = partsTotal + labor
-
-      if (totalAmount > 0) {
-        if (current.paymentStatus === "paid" && current.paymentAccountId) {
-          await db
-            .update(accounts)
-            .set({ balance: sql`${accounts.balance} - ${totalAmount}` })
-            .where(eq(accounts.id, current.paymentAccountId))
-        }
-
-        if (newPaymentStatus === "paid" && newAccountId) {
-          await db
-            .update(accounts)
-            .set({ balance: sql`${accounts.balance} + ${totalAmount}` })
-            .where(eq(accounts.id, newAccountId))
-        }
+      if (newAccountId && newPaidAmount > 0) {
+        await db
+          .update(accounts)
+          .set({ balance: sql`${accounts.balance} + ${newPaidAmount}` })
+          .where(eq(accounts.id, newAccountId))
       }
     }
 

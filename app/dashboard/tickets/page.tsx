@@ -17,7 +17,6 @@ interface Ticket {
   brand: string
   model: string
   status: string
-  estimatedCompletion: string | null
   createdAt: string
 }
 
@@ -158,7 +157,6 @@ export default function TicketsPage() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Device</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Est. Completion</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -173,7 +171,6 @@ export default function TicketsPage() {
                       <TableCell>{ticket.customerName ?? "—"}</TableCell>
                       <TableCell>{ticket.brand} {ticket.model}</TableCell>
                       <TableCell><TicketStatusBadge status={ticket.status} /></TableCell>
-                      <TableCell>{formatDate(ticket.estimatedCompletion)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link href={`/dashboard/tickets/${ticket.id}`}>

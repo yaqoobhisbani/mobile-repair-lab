@@ -88,8 +88,9 @@ export const tickets = pgTable("tickets", {
   status: ticketStatusEnum("status").default("received").notNull(),
   paymentStatus: paymentStatusEnum("payment_status").default("unpaid").notNull(),
   paymentAccountId: integer("payment_account_id").references(() => accounts.id),
+  amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default("0").notNull(),
   laborCost: decimal("labor_cost", { precision: 10, scale: 2 }),
-  estimatedCompletion: timestamp("estimated_completion"),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
@@ -102,6 +103,15 @@ export const ticketItems = pgTable("ticket_items", {
     .notNull()
     .references(() => inventory.id),
   quantityUsed: integer("quantity_used").notNull().default(1),
+})
+
+export const ticketStatusHistory = pgTable("ticket_status_history", {
+  id: serial("id").primaryKey(),
+  ticketId: varchar("ticket_id", { length: 20 })
+    .notNull()
+    .references(() => tickets.id),
+  status: ticketStatusEnum("status").notNull(),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
 })
 
 export const invoices = pgTable("invoices", {

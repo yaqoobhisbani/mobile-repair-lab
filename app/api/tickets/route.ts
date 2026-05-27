@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { tickets, customers } from "@/db/schema"
+import { tickets, customers, ticketStatusHistory } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 
 export async function GET() {
@@ -15,7 +15,6 @@ export async function GET() {
         model: tickets.model,
         status: tickets.status,
         paymentStatus: tickets.paymentStatus,
-        estimatedCompletion: tickets.estimatedCompletion,
         createdAt: tickets.createdAt,
       })
       .from(tickets)
@@ -31,7 +30,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { customerId, brand, model, imei, passcode, problemCategory, problemDescription, laborCost, estimatedCompletion } = body
+    const { customerId, brand, model, imei, passcode, problemCategory, problemDescription, laborCost } = body
 
     if (!customerId || !brand || !model || !problemCategory) {
       return NextResponse.json({ error: "Customer, brand, model, and problem category are required" }, { status: 400 })
@@ -61,9 +60,14 @@ export async function POST(request: Request) {
         problemCategory,
         problemDescription: problemDescription || null,
         laborCost: laborCost ? String(laborCost) : null,
-        estimatedCompletion: estimatedCompletion ? new Date(estimatedCompletion) : null,
+
       })
       .returning()
+
+    await db.insert(ticketStatusHistory).values({
+      ticketId: nextId,
+      status: "received",
+    })
 
     return NextResponse.json({ ticket }, { status: 201 })
   } catch (error: any) {

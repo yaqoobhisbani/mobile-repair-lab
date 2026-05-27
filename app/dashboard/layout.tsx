@@ -1,13 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Bell, Loader2 } from "lucide-react"
+
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Overview",
+  "/dashboard/tickets": "Tickets",
+  "/dashboard/customers": "Customers",
+  "/dashboard/inventory": "Inventory",
+  "/dashboard/finance/accounts": "Accounts",
+  "/dashboard/settings": "Settings",
+}
 
 export default function DashboardLayout({
   children,
@@ -16,6 +25,7 @@ export default function DashboardLayout({
 }) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -33,6 +43,10 @@ export default function DashboardLayout({
   }
 
   if (!user) return null
+
+  const pageTitle = Object.entries(pageTitles).find(([path]) =>
+    pathname === path || pathname.startsWith(path + "/")
+  )?.[1] ?? ""
 
   return (
     <div className="flex min-h-screen">
@@ -54,9 +68,17 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col">
         <header className="sticky top-0 z-30 border-b bg-background">
           <div className="flex h-16 items-center justify-between px-4 md:px-6">
-            <div className="md:hidden w-8" />
-            <div className="hidden md:flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Dashboard</h2>
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+                MRL
+              </div>
+              <span className="font-semibold hidden sm:inline">Mobile Repair Lab</span>
+              {pageTitle && (
+                <>
+                  <span className="text-muted-foreground/40 hidden sm:inline">/</span>
+                  <span className="text-sm text-muted-foreground hidden sm:inline">{pageTitle}</span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon">

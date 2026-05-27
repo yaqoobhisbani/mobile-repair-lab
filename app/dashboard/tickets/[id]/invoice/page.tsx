@@ -16,13 +16,10 @@ interface TicketData {
   customerEmail: string | null
   brand: string
   model: string
-  laborCost: string | null
-  estimatedCompletion: string | null
-  createdAt: string
-  status: string
-  problemCategory: string | null
   paymentStatus: string
   paymentAccountName: string | null
+  laborCost: string | null
+  createdAt: string
 }
 
 const paymentBadgeVariant: Record<string, "secondary" | "default" | "outline"> = {
@@ -133,7 +130,6 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
               </div>
               <div className="text-right text-sm text-muted-foreground">
                 <p>Issue Date: {formatDate(ticket.createdAt)}</p>
-                <p>{ticket.estimatedCompletion ? `Due Date: ${formatDate(ticket.estimatedCompletion)}` : ""}</p>
                 <p className="mt-1">Device: {ticket.brand} {ticket.model}</p>
                 <p>Ticket: {id}</p>
               </div>
