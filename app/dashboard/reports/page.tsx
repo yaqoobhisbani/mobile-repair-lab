@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { TrendingUp, Wrench, PackageCheck, CheckCircle2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { TrendingUp, Wrench, PackageCheck, CheckCircle2, Download, Calendar } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
@@ -25,13 +25,6 @@ interface Summary {
   totalProfit: number
   totalTickets: number
 }
-
-const periods = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
-]
 
 function formatPeriod(dateStr: string, period: string) {
   const d = new Date(dateStr)
@@ -125,6 +118,21 @@ export default function ReportsPage() {
     )
   }
 
+  function exportCSV() {
+    if (data.length === 0) return
+    const rows = [["Period", "Parts Profit", "Labor Profit", "Total Profit", "Tickets"].join(",")]
+    data.forEach((d) => {
+      rows.push([formatPeriod(d.period, period), d.partsProfit, d.laborProfit, d.totalProfit, d.ticketCount].join(","))
+    })
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `profit-report-${period}-${new Date().toISOString().split("T")[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <PageTransition>
     <div className="space-y-6">
@@ -133,29 +141,49 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">Profit Report</h1>
           <p className="text-muted-foreground">Track earnings from labor and parts.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {periods.map((p) => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {period === "daily" && (
-            <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} className="w-40" />
-          )}
-          {period === "weekly" && (
-            <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} className="w-40" />
-          )}
-          {period === "monthly" && (
-            <Input type="month" value={monthValue} onChange={(e) => setMonthValue(e.target.value)} className="w-40" />
-          )}
-          {period === "yearly" && (
-            <Input type="number" min="2000" max="2099" value={yearValue} onChange={(e) => setYearValue(e.target.value)} className="w-28" />
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+            {["weekly", "monthly", "yearly"].map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  period === p ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </button>
+            ))}
+            <button
+              onClick={() => setPeriod("daily")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                period === "daily" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Calendar className="h-3.5 w-3.5 inline mr-1" />
+              Custom
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {period === "daily" && (
+              <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} className="w-36 h-9" />
+            )}
+            {period === "weekly" && (
+              <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} className="w-36 h-9" />
+            )}
+            {period === "monthly" && (
+              <Input type="month" value={monthValue} onChange={(e) => setMonthValue(e.target.value)} className="w-36 h-9" />
+            )}
+            {period === "yearly" && (
+              <Input type="number" min="2000" max="2099" value={yearValue} onChange={(e) => setYearValue(e.target.value)} className="w-28 h-9" />
+            )}
+
+            <Button variant="outline" size="sm" onClick={exportCSV} disabled={data.length === 0} title="Download CSV">
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Export
+            </Button>
+          </div>
         </div>
       </div>
 
