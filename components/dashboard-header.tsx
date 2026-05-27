@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +21,39 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { useTheme } from "next-themes"
-import { Search, Bell, LogOut, Settings, User, Command, Sun, Moon } from "lucide-react"
+import {
+  Search,
+  LogOut,
+  Settings,
+  Sun,
+  Moon,
+  LayoutDashboard,
+  ClipboardList,
+  Users,
+  Package,
+  BarChart3,
+  Landmark,
+  Receipt,
+  Loader2,
+  Ticket,
+} from "lucide-react"
+
+interface NavItem {
+  label: string
+  href: string
+  icon: React.ReactNode
+}
+
+const navItems: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+  { label: "Tickets", href: "/dashboard/tickets", icon: <ClipboardList className="h-4 w-4" /> },
+  { label: "Customers", href: "/dashboard/customers", icon: <Users className="h-4 w-4" /> },
+  { label: "Inventory", href: "/dashboard/inventory", icon: <Package className="h-4 w-4" /> },
+  { label: "Reports", href: "/dashboard/reports", icon: <BarChart3 className="h-4 w-4" /> },
+  { label: "Accounts", href: "/dashboard/finance/accounts", icon: <Landmark className="h-4 w-4" /> },
+  { label: "Expenses", href: "/dashboard/finance/expenses", icon: <Receipt className="h-4 w-4" /> },
+  { label: "Settings", href: "/dashboard/settings", icon: <Settings className="h-4 w-4" /> },
+]
 
 const breadcrumbLabels: Record<string, string> = {
   dashboard: "Dashboard",
@@ -35,6 +66,13 @@ const breadcrumbLabels: Record<string, string> = {
   expenses: "Expenses",
   settings: "Settings",
   new: "New",
+}
+
+interface SearchResult {
+  id: string
+  label: string
+  href: string
+  type: "ticket" | "customer" | "inventory"
 }
 
 function useBreadcrumbs(pathname: string) {
@@ -56,8 +94,10 @@ export function DashboardHeader() {
   const { theme, setTheme } = useTheme()
   const crumbs = useBreadcrumbs(pathname)
   const [commandOpen, setCommandOpen] = useState(false)
-  const [searchResults, setSearchResults] = useState<{ id: string; label: string; href: string }[]>([])
-  const searchRef = useRef<HTMLInputElement>(null)
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -70,27 +110,67 @@ export function DashboardHeader() {
     return () => document.removeEventListener("keydown", handler)
   }, [])
 
-  async function handleSearch(query: string) {
+  useEffect(() => {
+    if (commandOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 100)
+    }
+  }, [commandOpen])
+
+  const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([])
+      setSearchLoading(false)
       return
     }
+    setSearchLoading(true)
     try {
-      const [tickets, customers] = await Promise.all([
-        fetch(`/api/tickets?search=${encodeURIComponent(query)}&limit=5`).then((r) => r.json()),
-        fetch(`/api/customers?search=${encodeURIComponent(query)}&limit=5`).then((r) => r.json()),
+      const [ticketsRes, customersRes, inventoryRes] = await Promise.all([
+        fetch(`/api/tickets?search=${encodeURIComponent(query)}&limit=4`).then((r) => r.json()),
+        fetch(`/api/customers?search=${encodeURIComponent(query)}&limit=3`).then((r) => r.json()),
+        fetch(`/api/inventory?search=${encodeURIComponent(query)}&limit=3`).then((r) => r.json()),
       ])
-      const results: { id: string; label: string; href: string }[] = []
-      ;(tickets.tickets ?? []).forEach((t: { id: string; customerName?: string; brand?: string; model?: string }) =>
-        results.push({ id: t.id, label: `${t.id} — ${t.customerName ?? "Unknown"}`, href: `/dashboard/tickets/${t.id}` })
+      const results: SearchResult[] = []
+      ;(ticketsRes.tickets ?? []).forEach((t: { id: string; customerName?: string; brand?: string; model?: string }) =>
+        results.push({
+          id: t.id,
+          label: `${t.id} — ${t.customerName ?? "Unknown"} (${t.brand ?? ""} ${t.model ?? ""})`,
+          href: `/dashboard/tickets/${t.id}`,
+          type: "ticket",
+        }),
       )
-      ;(customers.customers ?? []).forEach((c: { id: number; name: string }) =>
-        results.push({ id: `c${c.id}`, label: c.name, href: `/dashboard/customers/${c.id}` })
+      ;(customersRes.customers ?? []).forEach((c: { id: number; name: string; phone?: string }) =>
+        results.push({
+          id: `c${c.id}`,
+          label: `${c.name}${c.phone ? ` — ${c.phone}` : ""}`,
+          href: `/dashboard/customers/${c.id}`,
+          type: "customer",
+        }),
       )
-      setSearchResults(results.slice(0, 8))
+      ;(inventoryRes.items ?? []).forEach((item: { id: number; partName: string; sku: string }) =>
+        results.push({
+          id: `i${item.id}`,
+          label: `${item.partName} (${item.sku})`,
+          href: `/dashboard/inventory/${item.id}`,
+          type: "inventory",
+        }),
+      )
+      setSearchResults(results.slice(0, 10))
     } catch {
       setSearchResults([])
+    } finally {
+      setSearchLoading(false)
     }
+  }, [])
+
+  function handleSearch(value: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => performSearch(value), 300)
+  }
+
+  function handleSelect(href: string) {
+    setCommandOpen(false)
+    setSearchResults([])
+    router.push(href)
   }
 
   return (
@@ -176,25 +256,72 @@ export function DashboardHeader() {
       </header>
 
       <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-        <CommandInput placeholder="Search tickets and customers..." onValueChange={handleSearch} />
+        <CommandInput ref={searchInputRef} placeholder="Search tickets, customers, parts..." onValueChange={handleSearch} />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          {searchResults.length > 0 && (
-            <CommandGroup heading="Results">
-              {searchResults.map((r) => (
-                <CommandItem
-                  key={r.id}
-                  value={r.id}
-                  onSelect={() => {
-                    setCommandOpen(false)
-                    router.push(r.href)
-                  }}
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  {r.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+          <CommandEmpty>{searchLoading ? "Searching..." : "No results found."}</CommandEmpty>
+
+          {searchLoading && (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {!searchLoading && searchResults.length > 0 && (
+            <>
+              {searchResults.some((r) => r.type === "ticket") && (
+                <CommandGroup heading="Tickets">
+                  {searchResults
+                    .filter((r) => r.type === "ticket")
+                    .map((r) => (
+                      <CommandItem key={r.id} value={r.id} onSelect={() => handleSelect(r.href)}>
+                        <Ticket className="h-4 w-4 mr-2 text-blue-500" />
+                        {r.label}
+                      </CommandItem>
+                    ))}
+                </CommandGroup>
+              )}
+              {searchResults.some((r) => r.type === "customer") && (
+                <CommandGroup heading="Customers">
+                  {searchResults
+                    .filter((r) => r.type === "customer")
+                    .map((r) => (
+                      <CommandItem key={r.id} value={r.id} onSelect={() => handleSelect(r.href)}>
+                        <Users className="h-4 w-4 mr-2 text-emerald-500" />
+                        {r.label}
+                      </CommandItem>
+                    ))}
+                </CommandGroup>
+              )}
+              {searchResults.some((r) => r.type === "inventory") && (
+                <CommandGroup heading="Inventory">
+                  {searchResults
+                    .filter((r) => r.type === "inventory")
+                    .map((r) => (
+                      <CommandItem key={r.id} value={r.id} onSelect={() => handleSelect(r.href)}>
+                        <Package className="h-4 w-4 mr-2 text-amber-500" />
+                        {r.label}
+                      </CommandItem>
+                    ))}
+                </CommandGroup>
+              )}
+            </>
+          )}
+
+          {!searchLoading && searchResults.length === 0 && (
+            <>
+              <CommandGroup heading="Quick Navigation">
+                {navItems.map((item) => (
+                  <CommandItem
+                    key={item.href}
+                    value={item.href}
+                    onSelect={() => handleSelect(item.href)}
+                  >
+                    {item.icon}
+                    <span className="ml-2">{item.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
           )}
         </CommandList>
       </CommandDialog>

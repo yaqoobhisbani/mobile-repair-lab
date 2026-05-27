@@ -1,14 +1,31 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { customers } from "@/db/schema"
-import { desc } from "drizzle-orm"
+import { desc, ilike, or } from "drizzle-orm"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const items = await db
-      .select()
-      .from(customers)
-      .orderBy(desc(customers.id))
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get("search")
+    const limit = searchParams.get("limit")
+
+    let items
+    if (search) {
+      const q = db
+        .select()
+        .from(customers)
+        .where(
+          or(
+            ilike(customers.name, `%${search}%`),
+            ilike(customers.phone, `%${search}%`),
+          ),
+        )
+        .orderBy(desc(customers.id))
+      items = await (limit ? q.limit(Number(limit)) : q)
+    } else {
+      const q = db.select().from(customers).orderBy(desc(customers.id))
+      items = await (limit ? q.limit(Number(limit)) : q)
+    }
 
     return NextResponse.json({ customers: items })
   } catch {

@@ -1,14 +1,32 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { inventory } from "@/db/schema"
-import { desc } from "drizzle-orm"
+import { desc, ilike, or } from "drizzle-orm"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const items = await db
-      .select()
-      .from(inventory)
-      .orderBy(desc(inventory.id))
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get("search")
+    const limit = searchParams.get("limit")
+
+    let items
+    if (search) {
+      const q = db
+        .select()
+        .from(inventory)
+        .where(
+          or(
+            ilike(inventory.partName, `%${search}%`),
+            ilike(inventory.sku, `%${search}%`),
+            ilike(inventory.compatibility, `%${search}%`),
+          ),
+        )
+        .orderBy(desc(inventory.id))
+      items = await (limit ? q.limit(Number(limit)) : q)
+    } else {
+      const q = db.select().from(inventory).orderBy(desc(inventory.id))
+      items = await (limit ? q.limit(Number(limit)) : q)
+    }
 
     return NextResponse.json({ items })
   } catch {

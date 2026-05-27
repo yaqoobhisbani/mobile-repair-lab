@@ -1,25 +1,58 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { tickets, customers, ticketStatusHistory } from "@/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, ilike, or } from "drizzle-orm"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const items = await db
-      .select({
-        id: tickets.id,
-        customerId: tickets.customerId,
-        customerName: customers.name,
-        customerPhone: customers.phone,
-        brand: tickets.brand,
-        model: tickets.model,
-        status: tickets.status,
-        paymentStatus: tickets.paymentStatus,
-        createdAt: tickets.createdAt,
-      })
-      .from(tickets)
-      .leftJoin(customers, eq(tickets.customerId, customers.id))
-      .orderBy(desc(tickets.createdAt))
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get("search")
+    const limit = searchParams.get("limit")
+
+    let items
+    if (search) {
+      const q = db
+        .select({
+          id: tickets.id,
+          customerId: tickets.customerId,
+          customerName: customers.name,
+          customerPhone: customers.phone,
+          brand: tickets.brand,
+          model: tickets.model,
+          status: tickets.status,
+          paymentStatus: tickets.paymentStatus,
+          createdAt: tickets.createdAt,
+        })
+        .from(tickets)
+        .leftJoin(customers, eq(tickets.customerId, customers.id))
+        .where(
+          or(
+            ilike(tickets.id, `%${search}%`),
+            ilike(tickets.brand, `%${search}%`),
+            ilike(tickets.model, `%${search}%`),
+            ilike(customers.name, `%${search}%`),
+          ),
+        )
+        .orderBy(desc(tickets.createdAt))
+      items = await (limit ? q.limit(Number(limit)) : q)
+    } else {
+      const q = db
+        .select({
+          id: tickets.id,
+          customerId: tickets.customerId,
+          customerName: customers.name,
+          customerPhone: customers.phone,
+          brand: tickets.brand,
+          model: tickets.model,
+          status: tickets.status,
+          paymentStatus: tickets.paymentStatus,
+          createdAt: tickets.createdAt,
+        })
+        .from(tickets)
+        .leftJoin(customers, eq(tickets.customerId, customers.id))
+        .orderBy(desc(tickets.createdAt))
+      items = await (limit ? q.limit(Number(limit)) : q)
+    }
 
     return NextResponse.json({ tickets: items })
   } catch {
