@@ -1,68 +1,101 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, AlertTriangle, X } from "lucide-react"
+import { Plus, Search, AlertTriangle, X, Loader2, Pencil, Trash2 } from "lucide-react"
 
-const allItems = [
-  { name: "iPhone 13 OLED Screen", sku: "SCR-IP13-BLK", compat: "iPhone 13", stock: 2, threshold: 5, cost: 89.00, sell: 149.00 },
-  { name: "Galaxy S24 Battery", sku: "BAT-GS24", compat: "Galaxy S24", stock: 1, threshold: 3, cost: 25.00, sell: 59.00 },
-  { name: "Pixel 8 Charging Port", sku: "CHG-PX8", compat: "Pixel 8", stock: 0, threshold: 2, cost: 12.00, sell: 39.00 },
-  { name: "iPhone 15 Pro OLED Screen", sku: "SCR-IP15P-BLK", compat: "iPhone 15 Pro", stock: 8, threshold: 3, cost: 120.00, sell: 199.00 },
-  { name: "iPhone SE Battery", sku: "BAT-IPSE3", compat: "iPhone SE (3rd Gen)", stock: 5, threshold: 2, cost: 18.00, sell: 45.00 },
-  { name: "Galaxy S23 Ultra Screen", sku: "SCR-GS23U", compat: "Galaxy S23 Ultra", stock: 3, threshold: 2, cost: 150.00, sell: 249.00 },
-  { name: "iPhone 15 Pro Max Back Glass", sku: "GL-IP15PM", compat: "iPhone 15 Pro Max", stock: 3, threshold: 4, cost: 35.00, sell: 79.00 },
-  { name: "Galaxy S24 Screen Protector", sku: "SCR-PRO-GS24", compat: "Galaxy S24", stock: 15, threshold: 5, cost: 5.00, sell: 15.00 },
-  { name: "iPhone 14 Battery", sku: "BAT-IP14", compat: "iPhone 14", stock: 4, threshold: 3, cost: 22.00, sell: 55.00 },
-  { name: "Pixel 7 Pro Screen", sku: "SCR-PX7P", compat: "Pixel 7 Pro", stock: 0, threshold: 2, cost: 95.00, sell: 169.00 },
-  { name: "iPhone 13 Battery", sku: "BAT-IP13", compat: "iPhone 13", stock: 6, threshold: 2, cost: 20.00, sell: 49.00 },
-  { name: "Galaxy S22 Screen", sku: "SCR-GS22", compat: "Galaxy S22", stock: 2, threshold: 3, cost: 80.00, sell: 139.00 },
-  { name: "OnePlus 12 Charging Port", sku: "CHG-OP12", compat: "OnePlus 12", stock: 1, threshold: 2, cost: 14.00, sell: 42.00 },
-  { name: "iPhone 15 Pro Max Screen", sku: "SCR-IP15PM", compat: "iPhone 15 Pro Max", stock: 5, threshold: 2, cost: 140.00, sell: 229.00 },
-  { name: "Galaxy A54 Battery", sku: "BAT-GA54", compat: "Galaxy A54", stock: 7, threshold: 3, cost: 15.00, sell: 39.00 },
-]
+interface InventoryItem {
+  id: number
+  partName: string
+  sku: string
+  compatibility: string | null
+  stockQty: number
+  lowStockThreshold: number | null
+  costPrice: string | null
+  sellingPrice: string | null
+}
 
 const ITEMS_PER_PAGE = 7
 
 export default function InventoryPage() {
+  const [items, setItems] = useState<InventoryItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [stockFilter, setStockFilter] = useState("all")
   const [page, setPage] = useState(1)
 
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then((res) => res.json())
+      .then((data) => setItems(data.items))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
-    return allItems.filter((item) => {
-      const isLow = item.stock <= item.threshold
-      const isOut = item.stock === 0
+    return items.filter((item) => {
+      const threshold = item.lowStockThreshold ?? 0
+      const isLow = item.stockQty <= threshold && item.stockQty > 0
+      const isOut = item.stockQty === 0
 
       const matchesSearch =
         !q ||
-        item.name.toLowerCase().includes(q) ||
+        item.partName.toLowerCase().includes(q) ||
         item.sku.toLowerCase().includes(q) ||
-        item.compat.toLowerCase().includes(q)
+        (item.compatibility ?? "").toLowerCase().includes(q)
 
       const matchesStock =
         stockFilter === "all" ||
-        (stockFilter === "low" && isLow && !isOut) ||
+        (stockFilter === "low" && isLow) ||
         (stockFilter === "out" && isOut) ||
         (stockFilter === "in" && !isLow && !isOut)
 
       return matchesSearch && matchesStock
     })
-  }, [search, stockFilter])
+  }, [items, search, stockFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
   const safePage = Math.min(page, totalPages)
   const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
 
+  const stats = useMemo(() => {
+    const totalParts = items.length
+    const totalStock = items.reduce((s, i) => s + i.stockQty, 0)
+    const lowStock = items.filter((i) => {
+      const threshold = i.lowStockThreshold ?? 0
+      return i.stockQty <= threshold && i.stockQty > 0
+    }).length
+    const outOfStock = items.filter((i) => i.stockQty === 0).length
+
+    const totalInvestment = items.reduce((s, i) => {
+      return s + (i.costPrice ? Number(i.costPrice) * i.stockQty : 0)
+    }, 0)
+
+    const totalValue = items.reduce((s, i) => {
+      return s + (i.sellingPrice ? Number(i.sellingPrice) * i.stockQty : 0)
+    }, 0)
+
+    return { totalParts, totalStock, lowStock, outOfStock, totalInvestment, totalValue }
+  }, [items])
+
   const hasFilters = search || stockFilter !== "all"
+
+  const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
+
+    const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" })
+    if (res.ok) {
+      setItems((prev) => prev.filter((i) => i.id !== id))
+    }
+  }
 
   const clearFilters = () => {
     setSearch("")
@@ -84,6 +117,59 @@ export default function InventoryPage() {
           </Button>
         </Link>
       </div>
+
+      {!loading && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Parts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{stats.totalParts}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Stock</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{stats.totalStock}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Investment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">Rs. {stats.totalInvestment.toFixed(0)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Shelf Value</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">Rs. {stats.totalValue.toFixed(0)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-amber-500">{stats.lowStock}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Out of Stock</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-destructive">{stats.outOfStock}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -126,9 +212,13 @@ export default function InventoryPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              No parts found matching your filters.
+              {items.length === 0 ? "No parts in inventory. Add your first part!" : "No parts found matching your filters."}
             </div>
           ) : (
             <>
@@ -146,31 +236,44 @@ export default function InventoryPage() {
                 </TableHeader>
                 <TableBody>
                   {paginated.map((item) => {
-                    const isLow = item.stock <= item.threshold
-                    const isOut = item.stock === 0
+                    const threshold = item.lowStockThreshold ?? 0
+                    const isLow = item.stockQty <= threshold && item.stockQty > 0
+                    const isOut = item.stockQty === 0
                     return (
-                      <TableRow key={item.sku}>
+                      <TableRow key={item.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{item.name}</span>
+                            <span className="font-medium">{item.partName}</span>
                             {(isLow || isOut) && (
                               <AlertTriangle className={`h-4 w-4 ${isOut ? "text-destructive" : "text-amber-500"}`} />
                             )}
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{item.sku}</TableCell>
-                        <TableCell>{item.compat}</TableCell>
+                        <TableCell>{item.compatibility ?? "—"}</TableCell>
                         <TableCell>
                           <Badge variant={isOut ? "destructive" : isLow ? "outline" : "secondary"}>
-                            {item.stock}
+                            {item.stockQty}
                           </Badge>
                         </TableCell>
-                        <TableCell>Rs. {item.cost.toFixed(2)}</TableCell>
-                        <TableCell>Rs. {item.sell.toFixed(2)}</TableCell>
+                        <TableCell>{item.costPrice ? `Rs. ${Number(item.costPrice).toFixed(2)}` : "—"}</TableCell>
+                        <TableCell>{item.sellingPrice ? `Rs. ${Number(item.sellingPrice).toFixed(2)}` : "—"}</TableCell>
                         <TableCell className="text-right">
-                          <Link href={`/dashboard/inventory/${item.sku}`}>
-                            <Button variant="ghost" size="sm">Edit</Button>
-                          </Link>
+                          <div className="flex items-center justify-end gap-1">
+                            <Link href={`/dashboard/inventory/${item.id}`}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(item.id, item.partName)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )

@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 
 export default function NewInventoryPage() {
   const router = useRouter()
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     partName: "",
     sku: "",
@@ -26,9 +28,31 @@ export default function NewInventoryPage() {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    router.push("/dashboard/inventory")
+    setSaving(true)
+    setError("")
+
+    try {
+      const res = await fetch("/api/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Failed to create part")
+        return
+      }
+
+      router.push("/dashboard/inventory")
+    } catch {
+      setError("Failed to create part")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -52,6 +76,9 @@ export default function NewInventoryPage() {
             <CardDescription>Enter the part information and pricing.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="partName">Part Name *</Label>
@@ -97,11 +124,14 @@ export default function NewInventoryPage() {
 
         <div className="flex items-center justify-end gap-4">
           <Link href="/dashboard/inventory">
-            <Button type="button" variant="outline">Cancel</Button>
+            <Button type="button" variant="outline" disabled={saving}>Cancel</Button>
           </Link>
-          <Button type="submit">
-            <Save className="h-4 w-4 mr-2" />
-            Add Part
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+            ) : (
+              <><Save className="h-4 w-4 mr-2" />Add Part</>
+            )}
           </Button>
         </div>
       </form>

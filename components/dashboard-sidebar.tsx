@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   Package,
+  Users,
   Settings,
   Wrench,
   X,
@@ -19,6 +20,7 @@ import {
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: ClipboardList },
+  { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/inventory", label: "Inventory", icon: Package },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
