@@ -123,7 +123,7 @@ export default function CustomersPage() {
         <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900/50">
+              <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Customers</CardTitle>
                   <Users className="h-4 w-4 text-blue-500" />
@@ -138,7 +138,7 @@ export default function CustomersPage() {
           </StaggerItem>
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+              <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">New This Month</CardTitle>
                   <UserPlus className="h-4 w-4 text-emerald-500" />
@@ -153,7 +153,7 @@ export default function CustomersPage() {
           </StaggerItem>
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-background border-violet-100 dark:border-violet-900/50">
+              <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">With Email</CardTitle>
                   <Mail className="h-4 w-4 text-violet-500" />
@@ -168,7 +168,7 @@ export default function CustomersPage() {
           </StaggerItem>
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background border-amber-100 dark:border-amber-900/50">
+              <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">No Email</CardTitle>
                   <MailX className="h-4 w-4 text-amber-500" />

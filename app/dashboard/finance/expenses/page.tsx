@@ -166,7 +166,7 @@ export default function ExpensesPage() {
           <StaggerContainer className="contents">
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-background border-rose-100 dark:border-rose-900/50">
+                <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/60 dark:to-background border-rose-100 dark:border-rose-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
                     <CalendarDays className="h-4 w-4 text-rose-500" />
@@ -179,7 +179,7 @@ export default function ExpensesPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/30 dark:to-background border-orange-100 dark:border-orange-900/50">
+                <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/60 dark:to-background border-orange-100 dark:border-orange-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
                     <CalendarRange className="h-4 w-4 text-orange-500" />
@@ -192,7 +192,7 @@ export default function ExpensesPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900/50">
+                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">All Time</CardTitle>
                     <Clock className="h-4 w-4 text-blue-500" />
@@ -205,7 +205,7 @@ export default function ExpensesPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-background border-violet-100 dark:border-violet-900/50">
+                <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
                     <List className="h-4 w-4 text-violet-500" />

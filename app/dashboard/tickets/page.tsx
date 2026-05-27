@@ -132,7 +132,7 @@ export default function TicketsPage() {
         <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-200 dark:border-blue-800">
+              <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-200 dark:border-blue-800">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Tickets</CardTitle>
                 </CardHeader>
@@ -144,7 +144,7 @@ export default function TicketsPage() {
           </StaggerItem>
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background border-amber-200 dark:border-amber-800">
+              <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-200 dark:border-amber-800">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
                 </CardHeader>
@@ -156,7 +156,7 @@ export default function TicketsPage() {
           </StaggerItem>
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-background border-emerald-200 dark:border-emerald-800">
+              <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-200 dark:border-emerald-800">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Pickup</CardTitle>
                 </CardHeader>
@@ -168,7 +168,7 @@ export default function TicketsPage() {
           </StaggerItem>
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-green-50 to-white dark:from-green-950/30 dark:to-background border-green-200 dark:border-green-800">
+              <Card className="bg-gradient-to-br from-green-50 to-white dark:from-green-950/60 dark:to-background border-green-200 dark:border-green-800">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
                 </CardHeader>
@@ -180,7 +180,7 @@ export default function TicketsPage() {
           </StaggerItem>
           <StaggerItem>
             <HoverCard>
-              <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-background border-rose-200 dark:border-rose-800">
+              <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/60 dark:to-background border-rose-200 dark:border-rose-800">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Cancelled</CardTitle>
                 </CardHeader>

@@ -142,7 +142,7 @@ export default function InventoryPage() {
           <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900/50">
+                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Parts</CardTitle>
                     <Package className="h-4 w-4 text-blue-500" />
@@ -155,7 +155,7 @@ export default function InventoryPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+                <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Stock</CardTitle>
                     <Boxes className="h-4 w-4 text-emerald-500" />
@@ -168,7 +168,7 @@ export default function InventoryPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-background border-violet-100 dark:border-violet-900/50">
+                <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Investment</CardTitle>
                     <DollarSign className="h-4 w-4 text-violet-500" />
@@ -181,7 +181,7 @@ export default function InventoryPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-950/30 dark:to-background border-cyan-100 dark:border-cyan-900/50">
+                <Card className="bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-950/60 dark:to-background border-cyan-100 dark:border-cyan-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Shelf Value</CardTitle>
                     <DollarSign className="h-4 w-4 text-cyan-500" />
@@ -194,7 +194,7 @@ export default function InventoryPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background border-amber-100 dark:border-amber-900/50">
+                <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock</CardTitle>
                     <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -207,7 +207,7 @@ export default function InventoryPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
-                <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-background border-rose-100 dark:border-rose-900/50">
+                <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/60 dark:to-background border-rose-100 dark:border-rose-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Out of Stock</CardTitle>
                     <XCircle className="h-4 w-4 text-rose-500" />
