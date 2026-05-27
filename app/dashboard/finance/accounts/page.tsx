@@ -13,6 +13,7 @@ import { Plus, Search, X, Pencil, Trash2, Landmark, Wallet, Building2, Banknote 
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface Account {
   id: number
@@ -32,6 +33,7 @@ const typeLabels: Record<string, string> = {
 }
 
 export default function AccountsPage() {
+  const { confirm, dialog } = useConfirm()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -72,7 +74,7 @@ export default function AccountsPage() {
   const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
 
   const deleteAccount = async (id: number, name: string) => {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
+    const ok = await confirm({ title: "Delete account", description: `Delete "${name}"? This cannot be undone.`, variant: "destructive" }); if (!ok) return
     try {
       const res = await fetch(`/api/accounts/${id}`, { method: "DELETE" })
       if (res.ok) {
@@ -234,7 +236,8 @@ export default function AccountsPage() {
             )
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -273,7 +276,7 @@ export default function AccountsPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></div>
               <DataTablePagination
                 currentPage={safePage}
                 totalPages={totalPages}
@@ -286,6 +289,7 @@ export default function AccountsPage() {
         </CardContent>
       </Card>
     </div>
+      {dialog}
     </PageTransition>
   )
 }

@@ -14,6 +14,7 @@ import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { AddPartDialog } from "@/components/add-part-dialog"
 import { ArrowLeft, Download, Loader2, Plus, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface TicketData {
   id: string
@@ -101,6 +102,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [draftImei, setDraftImei] = useState("")
   const [draftPasscode, setDraftPasscode] = useState("")
   const [draftDescription, setDraftDescription] = useState("")
+  const { confirm, dialog } = useConfirm()
 
   const computeTotal = useCallback(() => {
     const partsSum = items.reduce(
@@ -189,7 +191,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   }
 
   const removePart = async (itemId: number) => {
-    if (!confirm("Remove this part from the ticket? Stock will be restored.")) return
+    const ok = await confirm({ title: "Remove Part", description: "Remove this part from the ticket? Stock will be restored.", variant: "destructive" }); if (!ok) return
     try {
       const res = await fetch(`/api/tickets/${id}/items`, {
         method: "DELETE",
@@ -525,6 +527,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
           refreshParts()
         }}
       />
+      {dialog}
     </div>
   )
 }

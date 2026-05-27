@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Save, Trash2, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -62,20 +62,6 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  const handleDelete = async () => {
-    if (!confirm("Delete this customer? This cannot be undone.")) return
-    setSaving(true)
-
-    const res = await fetch(`/api/customers/${id}`, { method: "DELETE" })
-    if (res.ok) {
-      router.push("/dashboard/customers")
-    } else {
-      const data = await res.json()
-      toast.error(data.error || "Failed to delete customer")
-      setSaving(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -95,13 +81,9 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
           </Link>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Edit Customer</h1>
-            <p className="text-muted-foreground">ID: {id}</p>
+            <p className="text-muted-foreground">Update customer details below.</p>
           </div>
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDelete} disabled={saving}>
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete
-        </Button>
       </div>
 
       <form onSubmit={handleSubmit}>

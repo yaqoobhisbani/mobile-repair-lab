@@ -21,7 +21,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { Search, Bell, LogOut, Settings, User, Command } from "lucide-react"
+import { useTheme } from "next-themes"
+import { Search, Bell, LogOut, Settings, User, Command, Sun, Moon } from "lucide-react"
 
 const breadcrumbLabels: Record<string, string> = {
   dashboard: "Dashboard",
@@ -52,6 +53,7 @@ export function DashboardHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
   const crumbs = useBreadcrumbs(pathname)
   const [commandOpen, setCommandOpen] = useState(false)
   const [searchResults, setSearchResults] = useState<{ id: string; label: string; href: string }[]>([])
@@ -116,7 +118,7 @@ export function DashboardHeader() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -125,6 +127,16 @@ export function DashboardHeader() {
             title="Search (Cmd+K)"
           >
             <Search className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
           <DropdownMenu>

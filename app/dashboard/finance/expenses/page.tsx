@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface Expense {
   id: number
@@ -33,6 +34,7 @@ function formatDate(d: string) {
 }
 
 export default function ExpensesPage() {
+  const { confirm, dialog } = useConfirm()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -99,7 +101,7 @@ export default function ExpensesPage() {
   }
 
   const deleteExpense = async (id: number, description: string) => {
-    if (!confirm(`Delete expense "${description}"? Amount will be restored to the account.`)) return
+    const ok = await confirm({ title: "Delete expense", description: `Delete expense "${description}"? Amount will be restored to the account.`, variant: "destructive" }); if (!ok) return
     try {
       const res = await fetch(`/api/expenses/${id}`, { method: "DELETE" })
       if (res.ok) {
@@ -275,7 +277,8 @@ export default function ExpensesPage() {
             />
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
@@ -315,7 +318,7 @@ export default function ExpensesPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></div>
               <DataTablePagination
                 currentPage={safePage}
                 totalPages={totalPages}
@@ -328,6 +331,7 @@ export default function ExpensesPage() {
         </CardContent>
       </Card>
     </div>
+      {dialog}
     </PageTransition>
   )
 }

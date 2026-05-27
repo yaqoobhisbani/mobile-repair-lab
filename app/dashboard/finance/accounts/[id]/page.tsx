@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Save, Trash2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useConfirm } from "@/hooks/use-confirm"
 
 export default function EditAccountPage({ params }: { params: Promise<{ id: string }> }) {
+  const { confirm, dialog } = useConfirm()
   const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -69,7 +71,7 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
   }
 
   const handleDelete = async () => {
-    if (!confirm("Delete this account? This cannot be undone.")) return
+    const ok = await confirm({ title: "Delete account", description: "Delete this account? This cannot be undone.", variant: "destructive" }); if (!ok) return
     try {
       const res = await fetch(`/api/accounts/${id}`, { method: "DELETE" })
       if (res.ok) router.push("/dashboard/finance/accounts")
@@ -171,6 +173,7 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </form>
+      {dialog}
     </div>
   )
 }

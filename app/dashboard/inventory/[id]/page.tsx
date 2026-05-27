@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Save, Trash2, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 
 interface FormData {
   partName: string
@@ -95,25 +95,6 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this part? This action cannot be undone.")) return
-
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        router.push("/dashboard/inventory")
-      } else {
-        const data = await res.json()
-        setError(data.error || "Failed to delete part")
-      }
-    } catch {
-      setError("Failed to delete part")
-    } finally {
-      setSaving(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -133,13 +114,9 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
           </Link>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Edit Part</h1>
-            <p className="text-muted-foreground">SKU: {formData.sku}</p>
+            <p className="text-muted-foreground">Update the part information and pricing below.</p>
           </div>
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDelete} disabled={saving}>
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete
-        </Button>
       </div>
 
       <form onSubmit={handleSubmit}>

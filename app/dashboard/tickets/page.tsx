@@ -15,6 +15,7 @@ import { AnimatedCounter } from "@/components/animated-counter"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface Ticket {
   id: string
@@ -34,6 +35,7 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [page, setPage] = useState(1)
   const [error, setError] = useState("")
+  const { confirm, dialog } = useConfirm()
 
   useEffect(() => {
     if (error) toast.error(error)
@@ -86,7 +88,7 @@ export default function TicketsPage() {
   }
 
   const deleteTicket = async (id: string) => {
-    if (!confirm("Delete this ticket? This action cannot be undone.")) return
+    const ok = await confirm({ title: "Delete Ticket", description: "Delete this ticket? This action cannot be undone.", variant: "destructive" }); if (!ok) return
     try {
       const res = await fetch(`/api/tickets/${id}`, { method: "DELETE" })
       if (res.ok) {
@@ -261,7 +263,8 @@ export default function TicketsPage() {
             />
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Ticket ID</TableHead>
@@ -302,7 +305,7 @@ export default function TicketsPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></div>
               <DataTablePagination
                 currentPage={safePage}
                 totalPages={totalPages}
@@ -315,6 +318,7 @@ export default function TicketsPage() {
         </CardContent>
       </Card>
       </div>
+      {dialog}
     </PageTransition>
   )
 }

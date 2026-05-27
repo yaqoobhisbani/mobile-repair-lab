@@ -13,6 +13,7 @@ import { AnimatedCounter } from "@/components/animated-counter"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface Customer {
   id: number
@@ -25,6 +26,7 @@ interface Customer {
 const ITEMS_PER_PAGE = 10
 
 export default function CustomersPage() {
+  const { confirm, dialog } = useConfirm()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -70,7 +72,7 @@ export default function CustomersPage() {
   const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Delete customer "${name}"? This cannot be undone.`)) return
+    const ok = await confirm({ title: "Delete customer", description: `Delete customer "${name}"? This cannot be undone.`, variant: "destructive" }); if (!ok) return
 
     const res = await fetch(`/api/customers/${id}`, { method: "DELETE" })
       if (res.ok) {
@@ -232,7 +234,8 @@ export default function CustomersPage() {
             />
           ) : (
             <>
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -271,7 +274,7 @@ export default function CustomersPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></div>
               <DataTablePagination
                 currentPage={safePage}
                 totalPages={totalPages}
@@ -284,6 +287,7 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
     </div>
+      {dialog}
     </PageTransition>
   )
 }

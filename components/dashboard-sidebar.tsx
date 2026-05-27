@@ -1,26 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
-import { useTheme } from "next-themes"
 import {
   LayoutDashboard,
   ClipboardList,
   Package,
   Users,
   Settings,
-  Wrench,
   Wallet,
   Landmark,
   X,
-  LogOut,
   BarChart3,
-  Sun,
-  Moon,
   Building2,
 } from "lucide-react"
 
@@ -46,15 +41,7 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const { user, logout } = useAuth()
-  const { theme, setTheme } = useTheme()
-
-  const handleLogout = () => {
-    logout()
-    router.push("/login")
-    onClose?.()
-  }
+  const { user } = useAuth()
 
   return (
     <div className="flex h-full flex-col gap-4 py-4">
@@ -171,30 +158,6 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
           </Link>
         </div>
       </nav>
-
-      <Separator />
-
-      <div className="space-y-2 px-3">
-        <Link href="/">
-          <Button variant="outline" size="sm" className="w-full justify-start">
-            <Wrench className="h-4 w-4 mr-2" />
-            Public Site
-          </Button>
-        </Link>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-muted-foreground"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          {theme === "dark" ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
-          {theme === "dark" ? "Light Mode" : "Dark Mode"}
-        </Button>
-        <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={handleLogout}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
-      </div>
     </div>
   )
 }

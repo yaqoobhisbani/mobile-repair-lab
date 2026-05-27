@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, AlertTriangle, X, Pencil, Trash2, Package, DollarSign, XCircle, Boxes } from "lucide-react"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface InventoryItem {
   id: number
@@ -36,6 +37,7 @@ export default function InventoryPage() {
   const [stockFilter, setStockFilter] = useState("all")
   const [page, setPage] = useState(1)
   const [error, setError] = useState("")
+  const { confirm, dialog } = useConfirm()
 
   useEffect(() => {
     fetch("/api/inventory")
@@ -102,7 +104,8 @@ export default function InventoryPage() {
   const hasFilters = search || stockFilter !== "all"
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
+    const ok = await confirm({ title: "Delete part", description: `Delete "${name}"? This cannot be undone.`, variant: "destructive" })
+    if (!ok) return
 
     const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" })
     if (res.ok) {
@@ -292,7 +295,8 @@ export default function InventoryPage() {
                 )
               ) : (
                 <>
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Part Name</TableHead>
@@ -349,7 +353,7 @@ export default function InventoryPage() {
                         )
                       })}
                     </TableBody>
-                  </Table>
+                  </Table></div>
                   <DataTablePagination
                     currentPage={safePage}
                     totalPages={totalPages}
@@ -362,6 +366,7 @@ export default function InventoryPage() {
             </CardContent>
           </Card>
         </div>
+      {dialog}
     </PageTransition>
   )
 }
