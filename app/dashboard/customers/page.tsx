@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
-import { Plus, Search, X, Loader2, Pencil, Trash2 } from "lucide-react"
+import { Plus, Search, X, Pencil, Trash2, Users } from "lucide-react"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/empty-state"
 
 interface Customer {
   id: number
@@ -32,7 +35,7 @@ export default function CustomersPage() {
         return res.json()
       })
       .then((data) => setCustomers(data.customers ?? []))
-      .catch(() => {})
+      .catch(() => toast.error("Failed to load customers"))
       .finally(() => setLoading(false))
   }, [])
 
@@ -68,17 +71,27 @@ export default function CustomersPage() {
     if (!confirm(`Delete customer "${name}"? This cannot be undone.`)) return
 
     const res = await fetch(`/api/customers/${id}`, { method: "DELETE" })
-    if (res.ok) {
-      setCustomers((prev) => prev.filter((c) => c.id !== id))
-    }
+      if (res.ok) {
+        setCustomers((prev) => prev.filter((c) => c.id !== id))
+        toast.success("Customer deleted successfully")
+      }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer directory.</p>
+          {loading ? (
+            <>
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold">Customers</h1>
+              <p className="text-muted-foreground">Manage your customer directory.</p>
+            </>
+          )}
         </div>
         <Link href="/dashboard/customers/new">
           <Button>
@@ -88,7 +101,20 @@ export default function CustomersPage() {
         </Link>
       </div>
 
-      {!loading && (
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -150,15 +176,29 @@ export default function CustomersPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {customers.length === 0
-                ? "No customers yet. Add your first customer!"
-                : "No customers found matching your search."}
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No customers"
+              description={
+                customers.length === 0
+                  ? "Add your first customer to get started."
+                  : "No customers found matching your search."
+              }
+              action={
+                customers.length === 0 ? (
+                  <Link href="/dashboard/customers/new">
+                    <Button><Plus className="h-4 w-4 mr-2" />Add Customer</Button>
+                  </Link>
+                ) : undefined
+              }
+            />
           ) : (
             <>
               <Table>

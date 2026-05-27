@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
-import { Plus, Search, X, Loader2, Pencil, Trash2 } from "lucide-react"
+import { Plus, Search, X, Pencil, Trash2, Landmark } from "lucide-react"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/empty-state"
 
 interface Account {
   id: number
@@ -39,7 +42,7 @@ export default function AccountsPage() {
         return res.json()
       })
       .then((data) => setAccounts(data.accounts ?? []))
-      .catch(() => {})
+      .catch(() => toast.error("Failed to load accounts"))
       .finally(() => setLoading(false))
   }, [])
 
@@ -70,7 +73,10 @@ export default function AccountsPage() {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
     try {
       const res = await fetch(`/api/accounts/${id}`, { method: "DELETE" })
-      if (res.ok) setAccounts((prev) => prev.filter((a) => a.id !== id))
+      if (res.ok) {
+        setAccounts((prev) => prev.filter((a) => a.id !== id))
+        toast.success("Account deleted successfully")
+      }
     } catch {}
   }
 
@@ -89,7 +95,13 @@ export default function AccountsPage() {
         </Link>
       </div>
 
-      {!loading && (
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="pb-2">
@@ -156,15 +168,34 @@ export default function AccountsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {accounts.length === 0
-                ? "No accounts yet. Create your first account!"
-                : "No accounts found matching your search."}
-            </div>
+            accounts.length === 0 ? (
+              <EmptyState
+                icon={Landmark}
+                title="No accounts"
+                description="No accounts yet. Create your first account!"
+                action={
+                  <Link href="/dashboard/finance/accounts/new">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Account
+                    </Button>
+                  </Link>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon={Landmark}
+                title="No accounts found"
+                description="No accounts found matching your search."
+              />
+            )
           ) : (
             <>
               <Table>

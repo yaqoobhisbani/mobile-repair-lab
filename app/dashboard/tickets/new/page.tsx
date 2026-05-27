@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Save, Check, Loader2, Plus, Search, X } from "lucide-react"
+import { toast } from "sonner"
 
 interface Customer {
   id: number
@@ -41,6 +42,10 @@ export default function NewTicketPage() {
   const [description, setDescription] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
   useEffect(() => {
     fetch("/api/customers")
@@ -148,6 +153,7 @@ export default function NewTicketPage() {
         setSaving(false)
         return
       }
+      toast.success("Ticket created successfully")
       router.push(`/dashboard/tickets/${data.ticket.id}`)
     } catch {
       setError("Failed to create ticket")
@@ -341,9 +347,6 @@ export default function NewTicketPage() {
               <CardDescription>Describe the problem being experienced.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {error && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-              )}
               <div className="space-y-2">
                 <Label htmlFor="category">Problem Category *</Label>
                 <Select value={category} onValueChange={setCategory}>

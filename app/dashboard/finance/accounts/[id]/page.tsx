@@ -11,13 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Save, Trash2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function EditAccountPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
   const [name, setName] = useState("")
   const [type, setType] = useState("")
   const [balance, setBalance] = useState("")
@@ -35,14 +35,13 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
         setBalance(data.account.balance)
         setDescription(data.account.description ?? "")
       })
-      .catch(() => setError("Account not found"))
+      .catch(() => toast.error("Account not found"))
       .finally(() => setLoading(false))
   }, [id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    setError("")
 
     try {
       const res = await fetch(`/api/accounts/${id}`, {
@@ -57,13 +56,14 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Failed to update account")
+        toast.error(data.error || "Failed to update account")
         setSaving(false)
         return
       }
+      toast.success("Account updated successfully")
       router.push("/dashboard/finance/accounts")
     } catch {
-      setError("Failed to update account")
+      toast.error("Failed to update account")
       setSaving(false)
     }
   }
@@ -85,10 +85,10 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  if (error && !name) {
+  if (!name && !loading) {
     return (
       <div className="text-center py-24 text-muted-foreground">
-        {error}
+        Account not found
       </div>
     )
   }
@@ -114,10 +114,6 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
             <CardDescription>Update the account information below.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="name">Account Name *</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />

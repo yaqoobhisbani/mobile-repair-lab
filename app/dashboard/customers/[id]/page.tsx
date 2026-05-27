@@ -10,13 +10,13 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Save, Trash2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
@@ -32,14 +32,13 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
         setPhone(data.customer.phone)
         setEmail(data.customer.email ?? "")
       })
-      .catch(() => setError("Customer not found"))
+      .catch(() => toast.error("Customer not found"))
       .finally(() => setLoading(false))
   }, [id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    setError("")
 
     try {
       const res = await fetch(`/api/customers/${id}`, {
@@ -50,13 +49,14 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || "Failed to update customer")
+        toast.error(data.error || "Failed to update customer")
         return
       }
 
       router.push("/dashboard/customers")
+      toast.success("Customer updated successfully")
     } catch {
-      setError("Failed to update customer")
+      toast.error("Failed to update customer")
     } finally {
       setSaving(false)
     }
@@ -71,7 +71,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
       router.push("/dashboard/customers")
     } else {
       const data = await res.json()
-      setError(data.error || "Failed to delete customer")
+      toast.error(data.error || "Failed to delete customer")
       setSaving(false)
     }
   }
@@ -111,9 +111,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
             <CardDescription>Name and phone number are required.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name *</Label>

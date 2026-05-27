@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { use } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,6 +37,10 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
     costPrice: "",
     sellingPrice: "",
   })
+
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
   useEffect(() => {
     fetch(`/api/inventory/${id}`)
@@ -81,9 +86,10 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
         return
       }
 
+      toast.success("Inventory item updated successfully")
       router.push("/dashboard/inventory")
     } catch {
-      setError("Failed to update part")
+      toast.error("Failed to update inventory item")
     } finally {
       setSaving(false)
     }
@@ -143,9 +149,6 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             <CardDescription>Update the part information and pricing.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="partName">Part Name *</Label>

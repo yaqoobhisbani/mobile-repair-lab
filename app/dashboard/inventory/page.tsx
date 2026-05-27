@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/empty-state"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, AlertTriangle, X, Loader2, Pencil, Trash2 } from "lucide-react"
+import { Plus, Search, AlertTriangle, X, Pencil, Trash2, Package } from "lucide-react"
 
 interface InventoryItem {
   id: number
@@ -30,6 +33,7 @@ export default function InventoryPage() {
   const [search, setSearch] = useState("")
   const [stockFilter, setStockFilter] = useState("all")
   const [page, setPage] = useState(1)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     fetch("/api/inventory")
@@ -38,9 +42,13 @@ export default function InventoryPage() {
         return res.json()
       })
       .then((data) => setItems(data.items ?? []))
-      .catch(() => {})
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -97,6 +105,9 @@ export default function InventoryPage() {
     const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" })
     if (res.ok) {
       setItems((prev) => prev.filter((i) => i.id !== id))
+      toast.success("Item deleted successfully")
+    } else {
+      toast.error("Failed to delete item")
     }
   }
 
@@ -216,13 +227,36 @@ export default function InventoryPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64 mt-2" />
+              <div className="space-y-2 pt-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {items.length === 0 ? "No parts in inventory. Add your first part!" : "No parts found matching your filters."}
-            </div>
+            items.length === 0 ? (
+              <EmptyState
+                icon={Package}
+                title="No inventory items"
+                description="Get started by adding your first spare part to the inventory."
+                action={
+                  <Link href="/dashboard/inventory/new">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Part
+                    </Button>
+                  </Link>
+                }
+              />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                No parts found matching your filters.
+              </div>
+            )
           ) : (
             <>
               <Table>

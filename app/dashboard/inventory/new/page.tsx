@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +24,10 @@ export default function NewInventoryPage() {
     costPrice: "",
     sellingPrice: "",
   })
+
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
@@ -47,9 +52,10 @@ export default function NewInventoryPage() {
         return
       }
 
+      toast.success("Inventory item created successfully")
       router.push("/dashboard/inventory")
     } catch {
-      setError("Failed to create part")
+      toast.error("Failed to create inventory item")
     } finally {
       setSaving(false)
     }
@@ -76,9 +82,6 @@ export default function NewInventoryPage() {
             <CardDescription>Enter the part information and pricing.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="partName">Part Name *</Label>

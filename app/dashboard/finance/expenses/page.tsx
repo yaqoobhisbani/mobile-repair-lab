@@ -8,7 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, X, Loader2, Trash2 } from "lucide-react"
+import { Plus, Search, X, Trash2, Wallet } from "lucide-react"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/empty-state"
 
 interface Expense {
   id: number
@@ -41,7 +44,7 @@ export default function ExpensesPage() {
         return res.json()
       })
       .then((data) => setExpenses(data.expenses ?? []))
-      .catch(() => {})
+      .catch(() => toast.error("Failed to load expenses"))
       .finally(() => setLoading(false))
   }, [])
 
@@ -99,6 +102,7 @@ export default function ExpensesPage() {
       const res = await fetch(`/api/expenses/${id}`, { method: "DELETE" })
       if (res.ok) {
         setExpenses((prev) => prev.filter((e) => e.id !== id))
+        toast.success("Expense deleted successfully")
       }
     } catch {}
   }
@@ -118,42 +122,79 @@ export default function ExpensesPage() {
         </Link>
       </div>
 
-      {!loading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">Rs. {stats.todayTotal.toFixed(0)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">Rs. {stats.monthTotal.toFixed(0)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">All Time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">Rs. {stats.allTime.toFixed(0)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{stats.count}</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {loading ? (
+          <>
+            <Card>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-16" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-20" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-16" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-20" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24" />
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">Rs. {stats.todayTotal.toFixed(0)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">Rs. {stats.monthTotal.toFixed(0)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">All Time</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">Rs. {stats.allTime.toFixed(0)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{stats.count}</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
 
       <Card>
         <CardHeader>
@@ -188,15 +229,28 @@ export default function ExpensesPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {expenses.length === 0
-                ? "No expenses yet. Log your first expense!"
-                : "No expenses found matching your filters."}
-            </div>
+            <EmptyState
+              icon={Wallet}
+              title={expenses.length === 0 ? "No expenses yet" : "No expenses found"}
+              description={expenses.length === 0 ? "Log your first expense!" : "No expenses match your search or filters."}
+              action={
+                expenses.length === 0 ? (
+                  <Link href="/dashboard/finance/expenses/new">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Expense
+                    </Button>
+                  </Link>
+                ) : undefined
+              }
+            />
           ) : (
             <>
               <Table>

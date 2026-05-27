@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 interface Account {
   id: number
@@ -36,7 +37,7 @@ export default function NewExpensePage() {
         return res.json()
       })
       .then((data) => setAccounts(data.accounts ?? []))
-      .catch(() => {})
+      .catch(() => toast.error("Failed to load accounts"))
   }, [])
 
   const selectedAccount = accounts.find((a) => String(a.id) === accountId)
@@ -65,9 +66,10 @@ export default function NewExpensePage() {
         setSaving(false)
         return
       }
+      toast.success("Expense created successfully")
       router.push("/dashboard/finance/expenses")
     } catch {
-      setError("Failed to create expense")
+      toast.error("Failed to create expense")
       setSaving(false)
     }
   }

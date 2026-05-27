@@ -10,11 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewAccountPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
   const [name, setName] = useState("")
   const [type, setType] = useState("")
   const [balance, setBalance] = useState("")
@@ -23,7 +23,6 @@ export default function NewAccountPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    setError("")
 
     try {
       const res = await fetch("/api/accounts", {
@@ -38,13 +37,14 @@ export default function NewAccountPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Failed to create account")
+        toast.error(data.error || "Failed to create account")
         setSaving(false)
         return
       }
+      toast.success("Account created successfully")
       router.push("/dashboard/finance/accounts")
     } catch {
-      setError("Failed to create account")
+      toast.error("Failed to create account")
       setSaving(false)
     }
   }
@@ -70,10 +70,6 @@ export default function NewAccountPage() {
             <CardDescription>Enter the account information below.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="name">Account Name *</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />

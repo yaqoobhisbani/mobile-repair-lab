@@ -9,7 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, X, Loader2, Edit, Trash2, Eye } from "lucide-react"
+import { Plus, Search, X, Edit, Trash2, Eye, ClipboardList } from "lucide-react"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/empty-state"
 
 interface Ticket {
   id: string
@@ -28,6 +31,11 @@ export default function TicketsPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [page, setPage] = useState(1)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
   useEffect(() => {
     fetch("/api/tickets")
@@ -36,7 +44,7 @@ export default function TicketsPage() {
         return res.json()
       })
       .then((data) => setTickets(data.tickets ?? []))
-      .catch(() => {})
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
 
@@ -79,7 +87,10 @@ export default function TicketsPage() {
     if (!confirm("Delete this ticket? This action cannot be undone.")) return
     try {
       const res = await fetch(`/api/tickets/${id}`, { method: "DELETE" })
-      if (res.ok) setTickets((prev) => prev.filter((t) => t.id !== id))
+      if (res.ok) {
+        setTickets((prev) => prev.filter((t) => t.id !== id))
+        toast.success("Ticket deleted successfully")
+      }
     } catch {}
   }
 
@@ -92,8 +103,17 @@ export default function TicketsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Tickets</h1>
-          <p className="text-muted-foreground">Manage all repair tickets.</p>
+          {loading ? (
+            <>
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold">Tickets</h1>
+              <p className="text-muted-foreground">Manage all repair tickets.</p>
+            </>
+          )}
         </div>
         <Link href="/dashboard/tickets/new">
           <Button>
@@ -194,14 +214,28 @@ export default function TicketsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              Loading tickets...
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              No tickets found matching your filters.
-            </div>
+            <EmptyState
+              icon={ClipboardList}
+              title="No tickets found"
+              description={hasFilters ? "No tickets match your search or filters." : "No repair tickets have been created yet."}
+              action={
+                !hasFilters ? (
+                  <Link href="/dashboard/tickets/new">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Ticket
+                    </Button>
+                  </Link>
+                ) : undefined
+              }
+            />
           ) : (
             <>
               <Table>

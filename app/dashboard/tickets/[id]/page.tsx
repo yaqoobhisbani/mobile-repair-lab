@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { AddPartDialog } from "@/components/add-part-dialog"
 import { ArrowLeft, Download, Loader2, Plus, Save, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 interface TicketData {
   id: string
@@ -87,6 +88,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [saving, setSaving] = useState(false)
   const [showAddPart, setShowAddPart] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
   const [draftStatus, setDraftStatus] = useState("")
   const [draftPaymentStatus, setDraftPaymentStatus] = useState("")
@@ -176,6 +181,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         return
       }
       setTicket({ ...ticket, ...data.ticket })
+      toast.success("Ticket updated successfully")
     } catch {
       setError("Failed to save changes")
     }
@@ -190,7 +196,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemId }),
       })
-      if (res.ok) setItems((prev) => prev.filter((i) => i.id !== itemId))
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.id !== itemId))
+        toast.success("Part removed from ticket")
+      }
     } catch {}
   }
 
@@ -251,10 +260,6 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
           </Button>
         </div>
       </div>
-
-      {error && (
-        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
@@ -515,7 +520,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         open={showAddPart}
         onOpenChange={setShowAddPart}
         ticketId={id}
-        onPartAdded={refreshParts}
+        onPartAdded={() => {
+          toast.success("Part added to ticket")
+          refreshParts()
+        }}
       />
     </div>
   )

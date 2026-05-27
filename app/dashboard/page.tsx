@@ -5,7 +5,9 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
-import { ClipboardList, Package, DollarSign, AlertTriangle, ArrowRight, Loader2 } from "lucide-react"
+import { ClipboardList, Package, DollarSign, AlertTriangle, ArrowRight } from "lucide-react"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Ticket {
   id: string
@@ -62,6 +64,8 @@ export default function DashboardOverview() {
       setInventory(i.items ?? [])
       setAccounts(a.accounts ?? [])
       setExpenses(e.expenses ?? [])
+    }).catch((error) => {
+      toast.error(error.message || "Failed to load dashboard data")
     }).finally(() => setLoading(false))
   }, [])
 
@@ -103,9 +107,27 @@ export default function DashboardOverview() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-        Loading overview...
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+        </div>
       </div>
     )
   }

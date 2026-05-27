@@ -4,7 +4,9 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Loader2, TrendingUp, Wrench, PackageCheck, CheckCircle2 } from "lucide-react"
+import { TrendingUp, Wrench, PackageCheck, CheckCircle2 } from "lucide-react"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts"
 
 interface ProfitEntry {
@@ -94,7 +96,7 @@ export default function ReportsPage() {
         setData(result.data ?? [])
         setSummary(result.summary ?? null)
       })
-      .catch(() => {})
+      .catch(() => toast.error("Failed to load profit report"))
       .finally(() => setLoading(false))
   }, [buildUrl])
 
@@ -155,9 +157,14 @@ export default function ReportsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-          Loading report...
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-[400px] w-full rounded-xl" />
         </div>
       ) : (
         <>

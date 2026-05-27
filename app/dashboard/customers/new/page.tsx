@@ -9,11 +9,11 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function NewCustomerPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
@@ -21,7 +21,6 @@ export default function NewCustomerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    setError("")
 
     try {
       const res = await fetch("/api/customers", {
@@ -32,13 +31,14 @@ export default function NewCustomerPage() {
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Failed to create customer")
+        toast.error(data.error || "Failed to create customer")
         return
       }
 
       router.push("/dashboard/customers")
+      toast.success("Customer created successfully")
     } catch {
-      setError("Failed to create customer")
+      toast.error("Failed to create customer")
     } finally {
       setSaving(false)
     }
@@ -65,9 +65,7 @@ export default function NewCustomerPage() {
             <CardDescription>Name and phone number are required.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name *</Label>

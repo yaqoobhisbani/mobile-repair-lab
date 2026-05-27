@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
+import { useTheme } from "next-themes"
 import {
   LayoutDashboard,
   ClipboardList,
@@ -18,6 +19,8 @@ import {
   X,
   LogOut,
   BarChart3,
+  Sun,
+  Moon,
 } from "lucide-react"
 
 const mainNavItems = [
@@ -42,6 +45,7 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
 
   const handleLogout = () => {
     logout()
@@ -131,6 +135,15 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
             Public Site
           </Button>
         </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-muted-foreground"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+          {theme === "dark" ? "Light Mode" : "Dark Mode"}
+        </Button>
         <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out
