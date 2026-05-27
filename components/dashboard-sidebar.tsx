@@ -17,11 +17,13 @@ import {
   Landmark,
   X,
   LogOut,
+  BarChart3,
 } from "lucide-react"
 
 const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: ClipboardList },
+  { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/inventory", label: "Inventory", icon: Package },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -29,6 +31,7 @@ const mainNavItems = [
 
 const financeNavItems = [
   { href: "/dashboard/finance/accounts", label: "Accounts", icon: Landmark },
+  { href: "/dashboard/finance/expenses", label: "Expenses", icon: Wallet },
 ]
 
 interface DashboardSidebarProps {

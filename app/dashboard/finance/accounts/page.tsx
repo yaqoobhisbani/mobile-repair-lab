@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Plus, Search, X, Loader2, Pencil, Trash2 } from "lucide-react"
@@ -43,6 +43,14 @@ export default function AccountsPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const stats = useMemo(() => {
+    const totalBalance = accounts.reduce((s, a) => s + parseFloat(a.balance), 0)
+    const bankCount = accounts.filter((a) => a.type === "bank").length
+    const cashCount = accounts.filter((a) => a.type === "cash").length
+    const walletCount = accounts.filter((a) => a.type === "wallet").length
+    return { totalAccounts: accounts.length, totalBalance, bankCount, cashCount, walletCount }
+  }, [accounts])
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     if (!q) return accounts
@@ -80,6 +88,51 @@ export default function AccountsPage() {
           </Button>
         </Link>
       </div>
+
+      {!loading && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Accounts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{stats.totalAccounts}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-emerald-600">Rs. {stats.totalBalance.toFixed(0)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Bank Accounts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-blue-600">{stats.bankCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Cash</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-green-600">{stats.cashCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Mobile Wallets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-purple-600">{stats.walletCount}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

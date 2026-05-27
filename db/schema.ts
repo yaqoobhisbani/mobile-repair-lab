@@ -124,3 +124,15 @@ export const invoices = pgTable("invoices", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
 })
+
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  description: varchar("description", { length: 500 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  category: varchar("category", { length: 100 }),
+  accountId: integer("account_id")
+    .notNull()
+    .references(() => accounts.id),
+  date: timestamp("date").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
