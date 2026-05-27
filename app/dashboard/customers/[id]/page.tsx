@@ -94,7 +94,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Edit Customer</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Edit Customer</h1>
             <p className="text-muted-foreground">ID: {id}</p>
           </div>
         </div>

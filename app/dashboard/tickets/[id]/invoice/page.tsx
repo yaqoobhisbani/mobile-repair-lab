@@ -90,7 +90,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Invoice</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Invoice</h1>
             <p className="text-muted-foreground">Ticket {id}</p>
           </div>
         </div>

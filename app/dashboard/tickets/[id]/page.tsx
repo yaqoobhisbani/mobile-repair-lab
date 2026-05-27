@@ -238,7 +238,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">Ticket {id}</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Ticket {id}</h1>
               <TicketStatusBadge status={draftStatus} />
             </div>
             <p className="text-muted-foreground">{ticket.brand} {ticket.model} — {ticket.customerName}</p>

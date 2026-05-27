@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { TrendingUp, Wrench, PackageCheck, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
+import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
+import { AnimatedCounter } from "@/components/animated-counter"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts"
 
 interface ProfitEntry {
@@ -124,10 +126,11 @@ export default function ReportsPage() {
   }
 
   return (
+    <PageTransition>
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Profit Report</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">Profit Report</h1>
           <p className="text-muted-foreground">Track earnings from labor and parts.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -168,44 +171,60 @@ export default function ReportsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(summary?.totalProfit ?? 0)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Labor / Service Fee</CardTitle>
-                <Wrench className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary?.totalLaborProfit ?? 0)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Parts Profit</CardTitle>
-                <PackageCheck className="h-4 w-4 text-amber-600" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-amber-600">{formatCurrency(summary?.totalPartsProfit ?? 0)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Completed Tickets</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{summary?.totalTickets ?? 0}</p>
-              </CardContent>
-            </Card>
-          </div>
+          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Profit</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-emerald-600">{formatCurrency(summary?.totalProfit ?? 0)}</p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Labor / Service Fee</CardTitle>
+                    <Wrench className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary?.totalLaborProfit ?? 0)}</p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background border-amber-100 dark:border-amber-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Parts Profit</CardTitle>
+                    <PackageCheck className="h-4 w-4 text-amber-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-amber-600">{formatCurrency(summary?.totalPartsProfit ?? 0)}</p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-background border-violet-100 dark:border-violet-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Completed Tickets</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-violet-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold"><AnimatedCounter to={summary?.totalTickets ?? 0} /></p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+          </StaggerContainer>
 
           <Card>
             <CardHeader>
@@ -272,5 +291,6 @@ export default function ReportsPage() {
         </>
       )}
     </div>
+    </PageTransition>
   )
 }

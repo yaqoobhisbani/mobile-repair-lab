@@ -21,18 +21,21 @@ import {
   BarChart3,
   Sun,
   Moon,
+  Building2,
 } from "lucide-react"
 
 const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+]
+
+const operationsNavItems = [
   { href: "/dashboard/tickets", label: "Tickets", icon: ClipboardList },
-  { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/inventory", label: "Inventory", icon: Package },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
 const financeNavItems = [
+  { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
   { href: "/dashboard/finance/accounts", label: "Accounts", icon: Landmark },
   { href: "/dashboard/finance/expenses", label: "Expenses", icon: Wallet },
 ]
@@ -79,16 +82,16 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
       <nav className="flex-1 space-y-1 px-3">
         {mainNavItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+          const isActive = pathname === item.href
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onClose}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-gradient-to-r from-primary/10 to-transparent text-primary font-semibold"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
@@ -99,9 +102,36 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
         })}
 
         <div className="pt-3 pb-1">
-          <div className="flex items-center gap-3 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <Wallet className="h-4 w-4" />
-            Finance
+          <div className="flex items-center gap-3 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">
+            <Building2 className="h-4 w-4 text-cyan-600" />
+            <span className="bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Operations</span>
+          </div>
+          {operationsNavItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 pl-9 text-sm font-medium transition-all",
+                  isActive
+                    ? "bg-gradient-to-r from-primary/10 to-transparent text-primary font-semibold"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
+
+        <div className="pt-3 pb-1">
+          <div className="flex items-center gap-3 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">
+            <BarChart3 className="h-4 w-4 text-emerald-600" />
+            <span className="bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">Finance</span>
           </div>
           {financeNavItems.map((item) => {
             const Icon = item.icon
@@ -112,9 +142,9 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 pl-9 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2 pl-9 text-sm font-medium transition-all",
                   isActive
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-gradient-to-r from-primary/10 to-transparent text-primary font-semibold"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
@@ -123,6 +153,22 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
               </Link>
             )
           })}
+        </div>
+
+        <div className="pt-3 pb-1">
+          <Link
+            href="/dashboard/settings"
+            onClick={onClose}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+              pathname.startsWith("/dashboard/settings")
+                ? "bg-gradient-to-r from-primary/10 to-transparent text-primary font-semibold"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
         </div>
       </nav>
 

@@ -58,7 +58,7 @@ export default function NewAccountPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">New Account</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-emerald-500 to-cyan-500 bg-clip-text text-transparent">New Account</h1>
           <p className="text-muted-foreground">Create a new payment receivable account.</p>
         </div>
       </div>

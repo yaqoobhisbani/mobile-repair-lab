@@ -102,7 +102,7 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Edit Account</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-emerald-500 to-cyan-500 bg-clip-text text-transparent">Edit Account</h1>
           <p className="text-muted-foreground">{name}</p>
         </div>
       </div>

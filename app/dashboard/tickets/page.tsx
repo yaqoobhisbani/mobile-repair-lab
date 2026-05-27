@@ -10,6 +10,8 @@ import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, X, Edit, Trash2, Eye, ClipboardList } from "lucide-react"
+import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
+import { AnimatedCounter } from "@/components/animated-counter"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
@@ -100,7 +102,8 @@ export default function TicketsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageTransition>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           {loading ? (
@@ -110,7 +113,7 @@ export default function TicketsPage() {
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-bold">Tickets</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Tickets</h1>
               <p className="text-muted-foreground">Manage all repair tickets.</p>
             </>
           )}
@@ -124,48 +127,68 @@ export default function TicketsPage() {
       </div>
 
       {!loading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Tickets</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{stats.total}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-blue-600">{stats.active}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Pickup</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-emerald-600">{stats.ready}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Cancelled</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-red-600">{stats.cancelled}</p>
-            </CardContent>
-          </Card>
-        </div>
+        <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <StaggerItem>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-200 dark:border-blue-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Tickets</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold"><AnimatedCounter to={stats.total} /></p>
+                </CardContent>
+              </Card>
+            </HoverCard>
+          </StaggerItem>
+          <StaggerItem>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background border-amber-200 dark:border-amber-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold"><AnimatedCounter to={stats.active} /></p>
+                </CardContent>
+              </Card>
+            </HoverCard>
+          </StaggerItem>
+          <StaggerItem>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-background border-emerald-200 dark:border-emerald-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Pickup</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold"><AnimatedCounter to={stats.ready} /></p>
+                </CardContent>
+              </Card>
+            </HoverCard>
+          </StaggerItem>
+          <StaggerItem>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-green-50 to-white dark:from-green-950/30 dark:to-background border-green-200 dark:border-green-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold"><AnimatedCounter to={stats.completed} /></p>
+                </CardContent>
+              </Card>
+            </HoverCard>
+          </StaggerItem>
+          <StaggerItem>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-background border-rose-200 dark:border-rose-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Cancelled</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold"><AnimatedCounter to={stats.cancelled} /></p>
+                </CardContent>
+              </Card>
+            </HoverCard>
+          </StaggerItem>
+        </StaggerContainer>
       )}
 
       <Card>
@@ -291,6 +314,7 @@ export default function TicketsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PageTransition>
   )
 }

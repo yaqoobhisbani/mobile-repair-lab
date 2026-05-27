@@ -170,7 +170,7 @@ export default function NewTicketPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">New Ticket</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">New Ticket</h1>
           <p className="text-muted-foreground">Create a new repair ticket.</p>
         </div>
       </div>

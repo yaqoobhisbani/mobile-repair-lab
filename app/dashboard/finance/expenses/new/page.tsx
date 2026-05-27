@@ -83,7 +83,7 @@ export default function NewExpensePage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">New Expense</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-red-600 bg-clip-text text-transparent">New Expense</h1>
           <p className="text-muted-foreground">Log a business expense.</p>
         </div>
       </div>

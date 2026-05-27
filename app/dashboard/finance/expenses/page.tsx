@@ -8,10 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, X, Trash2, Wallet } from "lucide-react"
+import { Plus, Search, X, Trash2, Wallet, CalendarDays, CalendarRange, Clock, List } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
+import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
+import { AnimatedCounter } from "@/components/animated-counter"
 
 interface Expense {
   id: number
@@ -108,10 +110,10 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageTransition><div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Expenses</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-red-600 bg-clip-text text-transparent">Expenses</h1>
           <p className="text-muted-foreground">Track all business expenses.</p>
         </div>
         <Link href="/dashboard/finance/expenses/new">
@@ -159,40 +161,60 @@ export default function ExpensesPage() {
             </Card>
           </>
         ) : (
-          <>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">Rs. {stats.todayTotal.toFixed(0)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">Rs. {stats.monthTotal.toFixed(0)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">All Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">Rs. {stats.allTime.toFixed(0)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{stats.count}</p>
-              </CardContent>
-            </Card>
-          </>
+          <StaggerContainer className="contents">
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-background border-rose-100 dark:border-rose-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
+                    <CalendarDays className="h-4 w-4 text-rose-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-rose-600">Rs. <AnimatedCounter to={stats.todayTotal} /></p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/30 dark:to-background border-orange-100 dark:border-orange-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
+                    <CalendarRange className="h-4 w-4 text-orange-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-orange-600">Rs. <AnimatedCounter to={stats.monthTotal} /></p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">All Time</CardTitle>
+                    <Clock className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-blue-600">Rs. <AnimatedCounter to={stats.allTime} /></p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-background border-violet-100 dark:border-violet-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
+                    <List className="h-4 w-4 text-violet-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold"><AnimatedCounter to={stats.count} /></p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+          </StaggerContainer>
         )}
       </div>
 
@@ -306,5 +328,6 @@ export default function ExpensesPage() {
         </CardContent>
       </Card>
     </div>
+    </PageTransition>
   )
 }

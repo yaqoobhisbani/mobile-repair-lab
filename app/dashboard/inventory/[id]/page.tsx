@@ -132,7 +132,7 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Edit Part</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Edit Part</h1>
             <p className="text-muted-foreground">SKU: {formData.sku}</p>
           </div>
         </div>

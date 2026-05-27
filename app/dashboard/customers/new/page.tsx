@@ -53,7 +53,7 @@ export default function NewCustomerPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Add Customer</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Add Customer</h1>
           <p className="text-muted-foreground">Add a new customer to your directory.</p>
         </div>
       </div>

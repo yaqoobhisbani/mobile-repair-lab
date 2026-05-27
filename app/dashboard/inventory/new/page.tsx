@@ -70,7 +70,7 @@ export default function NewInventoryPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Add Inventory Part</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Add Inventory Part</h1>
           <p className="text-muted-foreground">Add a new spare part to the catalog.</p>
         </div>
       </div>

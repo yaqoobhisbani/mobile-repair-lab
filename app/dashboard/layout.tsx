@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
+import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Loader2 } from "lucide-react"
@@ -51,6 +52,7 @@ export default function DashboardLayout({
       </Sheet>
 
       <div className="flex-1 flex flex-col">
+        <DashboardHeader />
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>

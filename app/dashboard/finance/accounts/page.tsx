@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
-import { Plus, Search, X, Pencil, Trash2, Landmark } from "lucide-react"
+import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
+import { AnimatedCounter } from "@/components/animated-counter"
+import { Plus, Search, X, Pencil, Trash2, Landmark, Wallet, Building2, Banknote } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
@@ -81,10 +83,11 @@ export default function AccountsPage() {
   }
 
   return (
+    <PageTransition>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Accounts</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-emerald-500 to-cyan-500 bg-clip-text text-transparent">Accounts</h1>
           <p className="text-muted-foreground">Manage payment receivable accounts.</p>
         </div>
         <Link href="/dashboard/finance/accounts/new">
@@ -102,48 +105,81 @@ export default function AccountsPage() {
           <Skeleton className="h-24 w-full" />
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Accounts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{stats.totalAccounts}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-emerald-600">Rs. {stats.totalBalance.toFixed(0)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Bank Accounts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-blue-600">{stats.bankCount}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Cash</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-green-600">{stats.cashCount}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Mobile Wallets</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-purple-600">{stats.walletCount}</p>
-            </CardContent>
-          </Card>
-        </div>
+          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Accounts</CardTitle>
+                    <Landmark className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">
+                      <AnimatedCounter to={stats.totalAccounts} />
+                    </p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Balance</CardTitle>
+                    <Wallet className="h-4 w-4 text-emerald-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-emerald-600">Rs. <AnimatedCounter to={stats.totalBalance} decimals={0} /></p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-background border-violet-100 dark:border-violet-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Bank Accounts</CardTitle>
+                    <Building2 className="h-4 w-4 text-violet-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-violet-600">
+                      <AnimatedCounter to={stats.bankCount} />
+                    </p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background border-amber-100 dark:border-amber-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Cash</CardTitle>
+                    <Banknote className="h-4 w-4 text-amber-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-amber-600">
+                      <AnimatedCounter to={stats.cashCount} />
+                    </p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-950/30 dark:to-background border-cyan-100 dark:border-cyan-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Mobile Wallets</CardTitle>
+                    <Wallet className="h-4 w-4 text-cyan-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-cyan-600">
+                      <AnimatedCounter to={stats.walletCount} />
+                    </p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+          </StaggerContainer>
       )}
 
       <Card>
@@ -250,5 +286,6 @@ export default function AccountsPage() {
         </CardContent>
       </Card>
     </div>
+    </PageTransition>
   )
 }
