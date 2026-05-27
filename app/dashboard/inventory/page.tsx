@@ -33,8 +33,11 @@ export default function InventoryPage() {
 
   useEffect(() => {
     fetch("/api/inventory")
-      .then((res) => res.json())
-      .then((data) => setItems(data.items))
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch")
+        return res.json()
+      })
+      .then((data) => setItems(data.items ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])

@@ -63,6 +63,17 @@ export const inventory = pgTable("inventory", {
   sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }),
 })
 
+export const accountTypeEnum = pgEnum("account_type", ["bank", "cash", "wallet"])
+
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: accountTypeEnum("type").notNull(),
+  balance: decimal("balance", { precision: 12, scale: 2 }).notNull().default("0"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
 export const tickets = pgTable("tickets", {
   id: varchar("id", { length: 20 }).primaryKey(),
   customerId: integer("customer_id")
@@ -75,6 +86,8 @@ export const tickets = pgTable("tickets", {
   problemCategory: varchar("problem_category", { length: 100 }),
   problemDescription: text("problem_description"),
   status: ticketStatusEnum("status").default("received").notNull(),
+  paymentStatus: paymentStatusEnum("payment_status").default("unpaid").notNull(),
+  paymentAccountId: integer("payment_account_id").references(() => accounts.id),
   laborCost: decimal("labor_cost", { precision: 10, scale: 2 }),
   estimatedCompletion: timestamp("estimated_completion"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

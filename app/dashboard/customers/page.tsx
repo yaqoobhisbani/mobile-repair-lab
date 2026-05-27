@@ -27,8 +27,11 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetch("/api/customers")
-      .then((res) => res.json())
-      .then((data) => setCustomers(data.customers))
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch")
+        return res.json()
+      })
+      .then((data) => setCustomers(data.customers ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])

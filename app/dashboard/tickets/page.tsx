@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,50 +9,51 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, X } from "lucide-react"
+import { Plus, Search, X, Loader2, Edit, Trash2, Eye } from "lucide-react"
 
-const allTickets = [
-  { id: "TKT-001", customer: "Alice Johnson", device: "iPhone 15 Pro", status: "repairing", due: "Jun 1" },
-  { id: "TKT-002", customer: "Bob Smith", device: "Galaxy S24", status: "awaiting_parts", due: "Jun 5" },
-  { id: "TKT-003", customer: "Carol White", device: "Pixel 8", status: "ready_for_pickup", due: "May 28" },
-  { id: "TKT-004", customer: "David Brown", device: "iPhone 14", status: "diagnosing", due: "Jun 3" },
-  { id: "TKT-005", customer: "Eve Davis", device: "Galaxy S23", status: "received", due: "Jun 2" },
-  { id: "TKT-006", customer: "Frank Miller", device: "iPhone 15 Pro Max", status: "completed", due: "May 25" },
-  { id: "TKT-007", customer: "Grace Wilson", device: "Pixel 7", status: "cancelled", due: "—" },
-  { id: "TKT-008", customer: "Henry Taylor", device: "iPhone 13", status: "repairing", due: "Jun 6" },
-  { id: "TKT-009", customer: "Ivy Chen", device: "Galaxy S22", status: "diagnosing", due: "Jun 4" },
-  { id: "TKT-010", customer: "Jack Anderson", device: "Pixel 6", status: "received", due: "Jun 7" },
-  { id: "TKT-011", customer: "Karen Lee", device: "iPhone 12", status: "awaiting_parts", due: "Jun 10" },
-  { id: "TKT-012", customer: "Leo Martinez", device: "Galaxy S21", status: "ready_for_pickup", due: "May 30" },
-  { id: "TKT-013", customer: "Mia Thompson", device: "OnePlus 12", status: "repairing", due: "Jun 8" },
-  { id: "TKT-014", customer: "Noah Garcia", device: "iPhone 15", status: "completed", due: "May 27" },
-  { id: "TKT-015", customer: "Olivia Brown", device: "Galaxy S24 Ultra", status: "cancelled", due: "—" },
-  { id: "TKT-016", customer: "Peter Robinson", device: "Pixel 8 Pro", status: "diagnosing", due: "Jun 9" },
-  { id: "TKT-017", customer: "Quinn Davis", device: "iPhone 14 Pro", status: "received", due: "Jun 11" },
-  { id: "TKT-018", customer: "Rachel Wilson", device: "Galaxy A54", status: "repairing", due: "Jun 5" },
-  { id: "TKT-019", customer: "Sam Harris", device: "OnePlus 11", status: "awaiting_parts", due: "Jun 12" },
-  { id: "TKT-020", customer: "Tina Clark", device: "iPhone SE", status: "ready_for_pickup", due: "Jun 1" },
-]
+interface Ticket {
+  id: string
+  customerName: string | null
+  brand: string
+  model: string
+  status: string
+  estimatedCompletion: string | null
+  createdAt: string
+}
 
 const ITEMS_PER_PAGE = 7
 
 export default function TicketsPage() {
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [page, setPage] = useState(1)
 
+  useEffect(() => {
+    fetch("/api/tickets")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch")
+        return res.json()
+      })
+      .then((data) => setTickets(data.tickets ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
-    return allTickets.filter((t) => {
+    return tickets.filter((t) => {
+      const device = `${t.brand} ${t.model}`.toLowerCase()
       const matchesSearch =
         !q ||
         t.id.toLowerCase().includes(q) ||
-        t.customer.toLowerCase().includes(q) ||
-        t.device.toLowerCase().includes(q)
+        (t.customerName ?? "").toLowerCase().includes(q) ||
+        device.includes(q)
       const matchesStatus = statusFilter === "all" || t.status === statusFilter
       return matchesSearch && matchesStatus
     })
-  }, [search, statusFilter])
+  }, [search, statusFilter, tickets])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
   const safePage = Math.min(page, totalPages)
@@ -64,6 +65,19 @@ export default function TicketsPage() {
     setSearch("")
     setStatusFilter("all")
     setPage(1)
+  }
+
+  const deleteTicket = async (id: string) => {
+    if (!confirm("Delete this ticket? This action cannot be undone.")) return
+    try {
+      const res = await fetch(`/api/tickets/${id}`, { method: "DELETE" })
+      if (res.ok) setTickets((prev) => prev.filter((t) => t.id !== id))
+    } catch {}
+  }
+
+  function formatDate(d: string | null) {
+    if (!d) return "—"
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })
   }
 
   return (
@@ -126,7 +140,12 @@ export default function TicketsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Loading tickets...
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               No tickets found matching your filters.
             </div>
@@ -151,14 +170,26 @@ export default function TicketsPage() {
                           {ticket.id}
                         </Link>
                       </TableCell>
-                      <TableCell>{ticket.customer}</TableCell>
-                      <TableCell>{ticket.device}</TableCell>
+                      <TableCell>{ticket.customerName ?? "—"}</TableCell>
+                      <TableCell>{ticket.brand} {ticket.model}</TableCell>
                       <TableCell><TicketStatusBadge status={ticket.status} /></TableCell>
-                      <TableCell>{ticket.due}</TableCell>
+                      <TableCell>{formatDate(ticket.estimatedCompletion)}</TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/dashboard/tickets/${ticket.id}`}>
-                          <Button variant="ghost" size="sm">View</Button>
-                        </Link>
+                        <div className="flex items-center justify-end gap-1">
+                          <Link href={`/dashboard/tickets/${ticket.id}`}>
+                            <Button variant="ghost" size="icon">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button variant="ghost" size="icon" onClick={() => deleteTicket(ticket.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                          <Link href={`/dashboard/tickets/${ticket.id}`}>
+                            <Button variant="ghost" size="icon">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -13,16 +13,22 @@ import {
   Users,
   Settings,
   Wrench,
+  Wallet,
+  Landmark,
   X,
   LogOut,
 } from "lucide-react"
 
-const navItems = [
+const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/tickets", label: "Tickets", icon: ClipboardList },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/inventory", label: "Inventory", icon: Package },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
+]
+
+const financeNavItems = [
+  { href: "/dashboard/finance/accounts", label: "Accounts", icon: Landmark },
 ]
 
 interface DashboardSidebarProps {
@@ -64,7 +70,7 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
       <Separator />
 
       <nav className="flex-1 space-y-1 px-3">
-        {navItems.map((item) => {
+        {mainNavItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
           return (
@@ -84,6 +90,33 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
             </Link>
           )
         })}
+
+        <div className="pt-3 pb-1">
+          <div className="flex items-center gap-3 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Wallet className="h-4 w-4" />
+            Finance
+          </div>
+          {financeNavItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 pl-9 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
       </nav>
 
       <Separator />

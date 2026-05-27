@@ -15,6 +15,20 @@
       "when": 1779841418019,
       "tag": "0001_superb_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779845656815,
+      "tag": "0002_thick_jimmy_woo",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779846136316,
+      "tag": "0003_bright_whistler",
+      "breakpoints": true
     }
   ]
 }

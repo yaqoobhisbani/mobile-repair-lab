@@ -1,15 +1,87 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { use } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Printer } from "lucide-react"
+import { ArrowLeft, Loader2, Printer } from "lucide-react"
+
+interface TicketData {
+  id: string
+  customerName: string | null
+  customerPhone: string | null
+  customerEmail: string | null
+  brand: string
+  model: string
+  laborCost: string | null
+  estimatedCompletion: string | null
+  createdAt: string
+  status: string
+  problemCategory: string | null
+  paymentStatus: string
+  paymentAccountName: string | null
+}
+
+const paymentBadgeVariant: Record<string, "secondary" | "default" | "outline"> = {
+  unpaid: "secondary",
+  partially_paid: "outline",
+  paid: "default",
+}
+
+interface TicketItem {
+  id: number
+  partName: string | null
+  sku: string | null
+  quantityUsed: number
+  sellingPrice: string | null
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+}
 
 export default function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const [ticket, setTicket] = useState<TicketData | null>(null)
+  const [items, setItems] = useState<TicketItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/tickets/${id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setTicket(data.ticket)
+        setItems(data.items)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-muted-foreground">
+        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+        Loading invoice...
+      </div>
+    )
+  }
+
+  if (!ticket) {
+    return (
+      <div className="text-center py-24 text-muted-foreground">
+        Ticket not found.
+      </div>
+    )
+  }
+
+  const partsTotal = items.reduce((sum, item) => {
+    return sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed)
+  }, 0)
+  const labor = parseFloat(ticket.laborCost ?? "0")
+  const grandTotal = partsTotal + labor
 
   return (
     <div className="space-y-6">
@@ -44,7 +116,9 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
               <div className="text-right">
                 <h3 className="text-lg font-semibold">Invoice</h3>
                 <p className="text-sm text-muted-foreground">INV-{id}</p>
-                <Badge variant="secondary" className="mt-1">Unpaid</Badge>
+                <Badge variant={paymentBadgeVariant[ticket.paymentStatus] ?? "secondary"} className="mt-1 capitalize">
+                  {ticket.paymentStatus.replace("_", " ")}
+                </Badge>
               </div>
             </div>
 
@@ -53,14 +127,14 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium mb-1">Bill To:</p>
-                <p className="font-medium">Alice Johnson</p>
-                <p className="text-sm text-muted-foreground">alice@example.com</p>
-                <p className="text-sm text-muted-foreground">+1 (555) 123-4567</p>
+                <p className="font-medium">{ticket.customerName}</p>
+                <p className="text-sm text-muted-foreground">{ticket.customerEmail || "—"}</p>
+                <p className="text-sm text-muted-foreground">{ticket.customerPhone || "—"}</p>
               </div>
               <div className="text-right text-sm text-muted-foreground">
-                <p>Issue Date: May 25, 2026</p>
-                <p>Due Date: June 1, 2026</p>
-                <p className="mt-1">Device: iPhone 15 Pro</p>
+                <p>Issue Date: {formatDate(ticket.createdAt)}</p>
+                <p>{ticket.estimatedCompletion ? `Due Date: ${formatDate(ticket.estimatedCompletion)}` : ""}</p>
+                <p className="mt-1">Device: {ticket.brand} {ticket.model}</p>
                 <p>Ticket: {id}</p>
               </div>
             </div>
@@ -77,32 +151,41 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b">
-                  <td className="py-3">
-                    <p className="font-medium">iPhone 15 Pro OLED Screen</p>
-                    <p className="text-xs text-muted-foreground">SCR-IP15P-BLK</p>
-                  </td>
-                  <td className="py-3 text-right">1</td>
-                  <td className="py-3 text-right">Rs. 199.00</td>
-                  <td className="py-3 text-right">Rs. 199.00</td>
-                </tr>
+                {items.map((item) => (
+                  <tr key={item.id} className="border-b">
+                    <td className="py-3">
+                      <p className="font-medium">{item.partName}</p>
+                      <p className="text-xs text-muted-foreground">{item.sku}</p>
+                    </td>
+                    <td className="py-3 text-right">{item.quantityUsed}</td>
+                    <td className="py-3 text-right">{item.sellingPrice ? `Rs. ${item.sellingPrice}` : "—"}</td>
+                    <td className="py-3 text-right">
+                      Rs. {(parseFloat(item.sellingPrice ?? "0") * item.quantityUsed).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
                 <tr className="border-b">
                   <td className="py-3">
                     <p className="font-medium">Labor / Service Fee</p>
-                    <p className="text-xs text-muted-foreground">Screen replacement labor</p>
                   </td>
                   <td className="py-3 text-right">1</td>
-                  <td className="py-3 text-right">Rs. 50.00</td>
-                  <td className="py-3 text-right">Rs. 50.00</td>
+                  <td className="py-3 text-right">{labor > 0 ? `Rs. ${labor.toFixed(2)}` : "—"}</td>
+                  <td className="py-3 text-right">{labor > 0 ? `Rs. ${labor.toFixed(2)}` : "—"}</td>
                 </tr>
               </tbody>
             </table>
 
             <div className="flex justify-end">
               <div className="w-64 space-y-2">
+                {ticket.paymentAccountName && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Account</span>
+                    <span>{ticket.paymentAccountName}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>Rs. 249.00</span>
+                  <span>Rs. {grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

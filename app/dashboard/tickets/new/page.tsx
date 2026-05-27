@@ -39,8 +39,6 @@ export default function NewTicketPage() {
   const [passcode, setPasscode] = useState("")
   const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
-  const [estimatedCost, setEstimatedCost] = useState("")
-  const [targetDate, setTargetDate] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -128,7 +126,33 @@ export default function NewTicketPage() {
       }
     }
 
-    router.push("/dashboard/tickets")
+    const payload = {
+      customerId,
+      brand,
+      model,
+      imei: imei || undefined,
+      passcode: passcode || undefined,
+      problemCategory: category,
+      problemDescription: description || undefined,
+    }
+
+    try {
+      const res = await fetch("/api/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to create ticket")
+        setSaving(false)
+        return
+      }
+      router.push(`/dashboard/tickets/${data.ticket.id}`)
+    } catch {
+      setError("Failed to create ticket")
+      setSaving(false)
+    }
   }
 
   return (
@@ -314,33 +338,27 @@ export default function NewTicketPage() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Issue Details</CardTitle>
-              <CardDescription>Describe the problem and set expectations.</CardDescription>
+              <CardDescription>Describe the problem being experienced.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {error && (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
               )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Problem Category *</Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger id="category">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="screen">Screen</SelectItem>
-                      <SelectItem value="battery">Battery</SelectItem>
-                      <SelectItem value="liquid">Liquid Damage</SelectItem>
-                      <SelectItem value="software">Software</SelectItem>
-                      <SelectItem value="charging">Charging Port</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="targetDate">Target Completion Date</Label>
-                  <Input id="targetDate" type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Problem Category *</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="screen">Screen</SelectItem>
+                    <SelectItem value="battery">Battery</SelectItem>
+                    <SelectItem value="liquid">Liquid Damage</SelectItem>
+                    <SelectItem value="software">Software</SelectItem>
+                    <SelectItem value="charging">Charging Port</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Problem Description *</Label>
@@ -351,10 +369,6 @@ export default function NewTicketPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   required
                 />
-              </div>
-              <div className="space-y-2 sm:w-64">
-                <Label htmlFor="estimatedCost">Estimated Cost (Rs.)</Label>
-                <Input id="estimatedCost" type="number" min="0" step="0.01" value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} />
               </div>
             </CardContent>
           </Card>
