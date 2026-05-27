@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { DataTablePagination } from "@/components/data-table-pagination"
@@ -60,6 +60,15 @@ export default function TicketsPage() {
 
   const hasFilters = search || statusFilter !== "all"
 
+  const stats = useMemo(() => {
+    const total = tickets.length
+    const active = tickets.filter((t) => t.status !== "completed" && t.status !== "cancelled").length
+    const ready = tickets.filter((t) => t.status === "ready_for_pickup").length
+    const completed = tickets.filter((t) => t.status === "completed").length
+    const cancelled = tickets.filter((t) => t.status === "cancelled").length
+    return { total, active, ready, completed, cancelled }
+  }, [tickets])
+
   const clearFilters = () => {
     setSearch("")
     setStatusFilter("all")
@@ -93,6 +102,51 @@ export default function TicketsPage() {
           </Button>
         </Link>
       </div>
+
+      {!loading && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Tickets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{stats.total}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-blue-600">{stats.active}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Pickup</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-emerald-600">{stats.ready}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Cancelled</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-red-600">{stats.cancelled}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
