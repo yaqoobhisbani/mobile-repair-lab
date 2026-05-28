@@ -63,7 +63,7 @@ export const inventory = pgTable("inventory", {
   sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }),
 })
 
-export const accountTypeEnum = pgEnum("account_type", ["bank", "cash", "wallet"])
+export const accountTypeEnum = pgEnum("account_type", ["bank", "cash"])
 
 export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),

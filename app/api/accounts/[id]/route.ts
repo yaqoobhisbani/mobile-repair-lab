@@ -46,7 +46,7 @@ export async function PUT(
     const body = await request.json()
     const { name, type, balance, description } = body
 
-    if (type && !["bank", "cash", "wallet"].includes(type)) {
+    if (type && !["bank", "cash"].includes(type)) {
       return NextResponse.json({ error: "Invalid account type" }, { status: 400 })
     }
 

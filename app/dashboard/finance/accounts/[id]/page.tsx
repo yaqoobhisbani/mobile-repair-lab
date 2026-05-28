@@ -130,7 +130,6 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
                 <SelectContent>
                   <SelectItem value="bank">Bank Account</SelectItem>
                   <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="wallet">Mobile Wallet</SelectItem>
                 </SelectContent>
               </Select>
             </div>

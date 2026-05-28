@@ -57,6 +57,13 @@
       "when": 1779875925465,
       "tag": "0007_magical_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779947149473,
+      "tag": "0008_medical_avengers",
+      "breakpoints": true
     }
   ]
 }

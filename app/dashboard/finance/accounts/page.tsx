@@ -18,7 +18,7 @@ import { useConfirm } from "@/hooks/use-confirm"
 interface Account {
   id: number
   name: string
-  type: "bank" | "cash" | "wallet"
+  type: "bank" | "cash"
   balance: string
   description: string | null
   createdAt: string
@@ -29,7 +29,6 @@ const ITEMS_PER_PAGE = 10
 const typeLabels: Record<string, string> = {
   bank: "Bank Account",
   cash: "Cash",
-  wallet: "Mobile Wallet",
 }
 
 export default function AccountsPage() {
@@ -52,10 +51,9 @@ export default function AccountsPage() {
 
   const stats = useMemo(() => {
     const totalBalance = accounts.reduce((s, a) => s + parseFloat(a.balance), 0)
-    const bankCount = accounts.filter((a) => a.type === "bank").length
-    const cashCount = accounts.filter((a) => a.type === "cash").length
-    const walletCount = accounts.filter((a) => a.type === "wallet").length
-    return { totalAccounts: accounts.length, totalBalance, bankCount, cashCount, walletCount }
+    const bankBalance = accounts.filter((a) => a.type === "bank").reduce((s, a) => s + parseFloat(a.balance), 0)
+    const cashBalance = accounts.filter((a) => a.type === "cash").reduce((s, a) => s + parseFloat(a.balance), 0)
+    return { totalAccounts: accounts.length, totalBalance, bankBalance, cashBalance }
   }, [accounts])
 
   const filtered = useMemo(() => {
@@ -107,7 +105,7 @@ export default function AccountsPage() {
           <Skeleton className="h-24 w-full" />
         </div>
       ) : (
-          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StaggerItem>
               <HoverCard>
                 <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
@@ -140,13 +138,11 @@ export default function AccountsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Bank Accounts</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Bank Balance</CardTitle>
                     <Building2 className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-violet-600">
-                      <AnimatedCounter to={stats.bankCount} />
-                    </p>
+                    <p className="text-2xl font-bold text-violet-600">Rs. <AnimatedCounter to={stats.bankBalance} decimals={0} /></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -155,28 +151,11 @@ export default function AccountsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Cash</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Cash Balance</CardTitle>
                     <Banknote className="h-4 w-4 text-amber-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-amber-600">
-                      <AnimatedCounter to={stats.cashCount} />
-                    </p>
-                  </CardContent>
-                </Card>
-              </HoverCard>
-            </StaggerItem>
-            <StaggerItem>
-              <HoverCard>
-                <Card className="bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-950/60 dark:to-background border-cyan-100 dark:border-cyan-900/50">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Mobile Wallets</CardTitle>
-                    <Wallet className="h-4 w-4 text-cyan-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-cyan-600">
-                      <AnimatedCounter to={stats.walletCount} />
-                    </p>
+                    <p className="text-2xl font-bold text-amber-600">Rs. <AnimatedCounter to={stats.cashBalance} decimals={0} /></p>
                   </CardContent>
                 </Card>
               </HoverCard>

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Name and type are required" }, { status: 400 })
     }
 
-    if (!["bank", "cash", "wallet"].includes(type)) {
+    if (!["bank", "cash"].includes(type)) {
       return NextResponse.json({ error: "Invalid account type" }, { status: 400 })
     }
 

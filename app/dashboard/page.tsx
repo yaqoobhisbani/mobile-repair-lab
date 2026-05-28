@@ -86,13 +86,14 @@ export default function DashboardOverview() {
 
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const monthExpenses = expenses
+    const monthExpensesTotal = expenses
       .filter((e) => new Date(e.date) >= monthStart)
       .reduce((s, e) => s + parseFloat(e.amount), 0)
+    const monthExpenseCount = expenses.filter((e) => new Date(e.date) >= monthStart).length
 
     const totalBalance = accounts.reduce((s, a) => s + parseFloat(a.balance), 0)
 
-    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses, totalBalance }
+    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses: monthExpensesTotal, monthExpenseCount, totalBalance }
   }, [tickets, inventory, accounts, expenses])
 
   const recentTickets = useMemo(() => {
@@ -210,7 +211,7 @@ export default function DashboardOverview() {
                   <div className="text-2xl font-bold text-destructive">
                     Rs. <AnimatedCounter to={stats.monthExpenses} />
                   </div>
-                  <p className="text-xs text-muted-foreground">{stats.lowStock + stats.outOfStock} low stock alerts</p>
+                  <p className="text-xs text-muted-foreground">{stats.monthExpenseCount} expense entries this month</p>
                 </CardContent>
               </Card>
             </HoverCard>
