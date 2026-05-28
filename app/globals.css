@@ -108,3 +108,23 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+@media print {
+  aside,
+  nav,
+  header,
+  [class*="sidebar"],
+  [class*="dashboard-header"] {
+    display: none !important;
+  }
+  .flex-1 {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  @page {
+    margin: 1.5cm;
+  }
+}

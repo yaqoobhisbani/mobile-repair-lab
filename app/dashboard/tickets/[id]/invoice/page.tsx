@@ -83,7 +83,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Link href={`/dashboard/tickets/${id}`}>
             <Button variant="ghost" size="icon">
