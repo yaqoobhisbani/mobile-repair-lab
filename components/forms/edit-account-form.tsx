@@ -21,7 +21,6 @@ export function EditAccountForm({ accountId, onSuccess, onCancel }: EditAccountF
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState("")
   const [type, setType] = useState("")
-  const [balance, setBalance] = useState("")
   const [description, setDescription] = useState("")
 
   useEffect(() => {
@@ -33,7 +32,6 @@ export function EditAccountForm({ accountId, onSuccess, onCancel }: EditAccountF
       .then((data) => {
         setName(data.account.name)
         setType(data.account.type)
-        setBalance(data.account.balance)
         setDescription(data.account.description ?? "")
       })
       .catch(() => toast.error("Failed to load account"))
@@ -51,7 +49,6 @@ export function EditAccountForm({ accountId, onSuccess, onCancel }: EditAccountF
         body: JSON.stringify({
           name,
           type,
-          balance: balance || "0",
           description: description || null,
         }),
       })
@@ -109,11 +106,6 @@ export function EditAccountForm({ accountId, onSuccess, onCancel }: EditAccountF
               <SelectItem value="cash">Cash</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="balance">Current Balance (Rs.)</Label>
-          <Input id="balance" type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} />
         </div>
 
         <div className="space-y-2">

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
-import { Plus, Search, X, Pencil, Trash2, Eye, Landmark, Wallet, Building2, Banknote } from "lucide-react"
+import { Plus, Search, X, Pencil, Trash2, Eye, Landmark, Wallet, Building2, Banknote, ArrowUp } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
@@ -41,6 +41,11 @@ export default function AccountsPage() {
   const [slideOverOpen, setSlideOverOpen] = useState(false)
   const [editAccountId, setEditAccountId] = useState<number | null>(null)
   const [pageSize, setPageSize] = useState(10)
+  const [topUpOpen, setTopUpOpen] = useState(false)
+  const [topUpAccountId, setTopUpAccountId] = useState<number | null>(null)
+  const [topUpAmount, setTopUpAmount] = useState("")
+  const [topUpDescription, setTopUpDescription] = useState("")
+  const [topingUp, setTopingUp] = useState(false)
 
   function openCreateSlide() { setEditAccountId(null); setSlideOverOpen(true) }
   function openEditSlide(id: number) { setEditAccountId(id); setSlideOverOpen(true) }
@@ -88,6 +93,28 @@ export default function AccountsPage() {
         toast.success("Account deleted successfully")
       }
     } catch {}
+  }
+
+  const openTopUp = (id: number) => { setTopUpAccountId(id); setTopUpAmount(""); setTopUpDescription(""); setTopUpOpen(true) }
+
+  const handleTopUp = async () => {
+    const amount = parseFloat(topUpAmount)
+    if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return }
+    if (!topUpAccountId) return
+    setTopingUp(true)
+    try {
+      const res = await fetch(`/api/accounts/${topUpAccountId}/topup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, description: topUpDescription }),
+      })
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed to top up") }
+      setAccounts((prev) => prev.map((a) => a.id === topUpAccountId ? { ...a, balance: String(parseFloat(a.balance) + amount) } : a))
+      toast.success("Account topped up successfully")
+      setTopUpOpen(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to top up")
+    } finally { setTopingUp(false) }
   }
 
   return (
@@ -225,7 +252,6 @@ export default function AccountsPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Balance</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -235,12 +261,17 @@ export default function AccountsPage() {
                     <TableRow key={account.id}>
                       <TableCell className="font-medium">{account.name}</TableCell>
                       <TableCell>{typeLabels[account.type] || account.type}</TableCell>
-                      <TableCell className={parseFloat(account.balance) >= 0 ? "" : "text-destructive"}>
-                        Rs. {parseFloat(account.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </TableCell>
                       <TableCell className="text-muted-foreground">{account.description || "—"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-emerald-600 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                            onClick={() => openTopUp(account.id)}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
                           <Link href={`/dashboard/finance/accounts/${account.id}`}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <Eye className="h-4 w-4" />
@@ -295,6 +326,42 @@ export default function AccountsPage() {
         ) : (
           <CreateAccountForm onSuccess={() => { closeSlide(); fetch("/api/accounts").then(r => r.json()).then(d => setAccounts(d.accounts ?? [])).catch(() => toast.error("Failed to refresh accounts")) }} onCancel={closeSlide} />
         )}
+      </SlideOver>
+
+      <SlideOver
+        open={topUpOpen}
+        onOpenChange={setTopUpOpen}
+        title="Top Up Account"
+        description="Add funds to this account. A credit transaction will be recorded."
+        gradient="accounts"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Amount (Rs.)</label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Enter amount"
+              value={topUpAmount}
+              onChange={(e) => setTopUpAmount(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Description (optional)</label>
+            <Input
+              placeholder="e.g. Cash deposit"
+              value={topUpDescription}
+              onChange={(e) => setTopUpDescription(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <Button variant="outline" onClick={() => setTopUpOpen(false)} disabled={topingUp} className="flex-1">Cancel</Button>
+            <Button onClick={handleTopUp} disabled={topingUp} className="flex-1">
+              {topingUp ? "Topping up..." : "Top Up"}
+            </Button>
+          </div>
+        </div>
       </SlideOver>
     </PageTransition>
   )

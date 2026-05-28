@@ -22,7 +22,7 @@ interface Transaction {
   type: "credit" | "debit"
   amount: string
   description: string
-  referenceType: "ticket" | "expense" | "opening_balance"
+  referenceType: "ticket" | "expense" | "opening_balance" | "top_up"
   referenceId: string | null
   createdAt: string
 }
@@ -264,6 +264,8 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                             </Link>
                           ) : t.referenceType === "expense" ? (
                             <Badge variant="outline" className="text-xs">Expense</Badge>
+                          ) : t.referenceType === "top_up" ? (
+                            <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">Top Up</Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">Opening</Badge>
                           )}
