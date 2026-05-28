@@ -284,7 +284,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/dashboard/tickets/${id}/invoice`}>
-            <Button variant="outline" size="sm">
+            <Button variant="secondary" size="sm" className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:border-gray-700">
               <Download className="h-4 w-4 mr-2" />
               Invoice
             </Button>
@@ -502,7 +502,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               <CardTitle>Parts Used</CardTitle>
               <CardDescription>Inventory items attached to this ticket.</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setShowAddPart(true)}>
+            <Button variant="secondary" size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700" onClick={() => setShowAddPart(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Part
             </Button>

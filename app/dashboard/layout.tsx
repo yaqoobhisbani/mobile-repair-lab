@@ -36,17 +36,17 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar-background">
+      <aside className="hidden md:flex w-64 flex-col border-r bg-card">
         <DashboardSidebar />
       </aside>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden fixed top-4 left-4 z-40">
+          <Button variant="ghost" size="icon" className="md:hidden fixed top-4 left-4 z-40 print:hidden">
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-64">
+        <SheetContent side="left" className="p-0 w-64 bg-card">
           <DashboardSidebar onClose={() => setOpen(false)} />
         </SheetContent>
       </Sheet>

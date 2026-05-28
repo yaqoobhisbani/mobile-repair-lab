@@ -95,13 +95,13 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
             <p className="text-muted-foreground">Ticket {id}</p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => window.print()}>
+        <Button variant="secondary" onClick={() => window.print()} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700">
           <Printer className="h-4 w-4 mr-2" />
           Print / PDF
         </Button>
       </div>
 
-      <Card className="print:shadow-none print:border-none">
+      <Card className="print:shadow-none print:border-none print:bg-transparent">
         <CardContent className="p-8 print:p-0">
           <div id="invoice-content" className="space-y-8">
             <div className="flex items-start justify-between">
@@ -191,7 +191,6 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
 
             <div className="text-center text-sm text-muted-foreground">
               <p>Thank you for your business!</p>
-              <p className="text-xs mt-1">Payment due upon completion. We accept Cash, Credit/Debit Card, and Mobile Wallet.</p>
             </div>
           </div>
         </CardContent>
