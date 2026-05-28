@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +13,9 @@ import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
 import { useConfirm } from "@/hooks/use-confirm"
+import { SlideOver } from "@/components/slide-over"
+import { CreateAccountForm } from "@/components/forms/create-account-form"
+import { EditAccountForm } from "@/components/forms/edit-account-form"
 
 interface Account {
   id: number
@@ -37,6 +39,12 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [slideOverOpen, setSlideOverOpen] = useState(false)
+  const [editAccountId, setEditAccountId] = useState<number | null>(null)
+
+  function openCreateSlide() { setEditAccountId(null); setSlideOverOpen(true) }
+  function openEditSlide(id: number) { setEditAccountId(id); setSlideOverOpen(true) }
+  function closeSlide() { setSlideOverOpen(false); setEditAccountId(null) }
 
   useEffect(() => {
     fetch("/api/accounts")
@@ -90,12 +98,10 @@ export default function AccountsPage() {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-emerald-500 to-cyan-500 bg-clip-text text-transparent">Accounts</h1>
           <p className="text-muted-foreground">Manage payment receivable accounts.</p>
         </div>
-        <Link href="/dashboard/finance/accounts/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Account
-          </Button>
-        </Link>
+        <Button onClick={openCreateSlide}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Account
+        </Button>
       </div>
 
       {loading ? (
@@ -198,12 +204,10 @@ export default function AccountsPage() {
                 title="No accounts"
                 description="No accounts yet. Create your first account!"
                 action={
-                  <Link href="/dashboard/finance/accounts/new">
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Account
-                    </Button>
-                  </Link>
+                  <Button onClick={openCreateSlide}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Account
+                  </Button>
                 }
               />
             ) : (
@@ -237,11 +241,14 @@ export default function AccountsPage() {
                       <TableCell className="text-muted-foreground">{account.description || "—"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Link href={`/dashboard/finance/accounts/${account.id}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEditSlide(account.id)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -269,6 +276,20 @@ export default function AccountsPage() {
       </Card>
     </div>
       {dialog}
+
+      <SlideOver
+        open={slideOverOpen}
+        onOpenChange={(open) => { if (!open) closeSlide() }}
+        title={editAccountId ? "Edit Account" : "New Account"}
+        description={editAccountId ? "Update account information." : "Create a new payment receivable account."}
+        gradient="accounts"
+      >
+        {editAccountId ? (
+          <EditAccountForm accountId={editAccountId} onSuccess={() => { closeSlide(); fetch("/api/accounts").then(r => r.json()).then(d => setAccounts(d.accounts ?? [])).catch(() => toast.error("Failed to refresh accounts")) }} onCancel={closeSlide} />
+        ) : (
+          <CreateAccountForm onSuccess={() => { closeSlide(); fetch("/api/accounts").then(r => r.json()).then(d => setAccounts(d.accounts ?? [])).catch(() => toast.error("Failed to refresh accounts")) }} onCancel={closeSlide} />
+        )}
+      </SlideOver>
     </PageTransition>
   )
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +14,8 @@ import { EmptyState } from "@/components/empty-state"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { useConfirm } from "@/hooks/use-confirm"
+import { SlideOver } from "@/components/slide-over"
+import { CreateExpenseForm } from "@/components/forms/create-expense-form"
 
 interface Expense {
   id: number
@@ -40,6 +41,7 @@ export default function ExpensesPage() {
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [page, setPage] = useState(1)
+  const [slideOverOpen, setSlideOverOpen] = useState(false)
 
   useEffect(() => {
     fetch("/api/expenses")
@@ -118,12 +120,10 @@ export default function ExpensesPage() {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-red-600 bg-clip-text text-transparent">Expenses</h1>
           <p className="text-muted-foreground">Track all business expenses.</p>
         </div>
-        <Link href="/dashboard/finance/expenses/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Expense
-          </Button>
-        </Link>
+        <Button onClick={() => setSlideOverOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Expense
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -264,16 +264,14 @@ export default function ExpensesPage() {
               icon={Wallet}
               title={expenses.length === 0 ? "No expenses yet" : "No expenses found"}
               description={expenses.length === 0 ? "Log your first expense!" : "No expenses match your search or filters."}
-              action={
-                expenses.length === 0 ? (
-                  <Link href="/dashboard/finance/expenses/new">
-                    <Button>
+                action={
+                  expenses.length === 0 ? (
+                    <Button onClick={() => setSlideOverOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       New Expense
                     </Button>
-                  </Link>
-                ) : undefined
-              }
+                  ) : undefined
+                }
             />
           ) : (
             <>
@@ -332,6 +330,16 @@ export default function ExpensesPage() {
       </Card>
     </div>
       {dialog}
+
+      <SlideOver
+        open={slideOverOpen}
+        onOpenChange={setSlideOverOpen}
+        title="New Expense"
+        description="Log a business expense."
+        gradient="expenses"
+      >
+        <CreateExpenseForm onSuccess={() => { setSlideOverOpen(false); fetch("/api/expenses").then(r => r.json()).then(d => setExpenses(d.expenses ?? [])).catch(() => toast.error("Failed to refresh expenses")) }} onCancel={() => setSlideOverOpen(false)} />
+      </SlideOver>
     </PageTransition>
   )
 }
