@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
+import { DatePicker } from "@/components/date-picker"
 
 interface Account {
   id: number
@@ -27,7 +28,7 @@ export function CreateExpenseForm({ onSuccess, onCancel }: CreateExpenseFormProp
   const [category, setCategory] = useState("")
   const [customCategory, setCustomCategory] = useState("")
   const [accountId, setAccountId] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+  const [date, setDate] = useState<Date>(new Date())
   const [accounts, setAccounts] = useState<Account[]>([])
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export function CreateExpenseForm({ onSuccess, onCancel }: CreateExpenseFormProp
           category: category === "other" ? (customCategory || undefined) : (category || undefined),
           accountId,
           accountName: selectedAccount?.name,
-          date: date ? new Date(date).toISOString() : undefined,
+          date: date.toISOString(),
         }),
       })
       const data = await res.json()
@@ -160,11 +161,9 @@ export function CreateExpenseForm({ onSuccess, onCancel }: CreateExpenseFormProp
 
       <div className="space-y-2">
         <Label htmlFor="date">Date</Label>
-        <Input
-          id="date"
-          type="date"
+        <DatePicker
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(d) => d && setDate(d)}
         />
       </div>
 

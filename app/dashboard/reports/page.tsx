@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts"
+import { DatePicker } from "@/components/date-picker"
 
 interface ProfitEntry {
   period: string
@@ -45,7 +46,7 @@ function formatCurrency(n: number) {
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState("monthly")
-  const [dateValue, setDateValue] = useState(() => new Date().toISOString().split("T")[0])
+  const [dateValue, setDateValue] = useState<Date>(new Date())
   const [monthValue, setMonthValue] = useState(() => {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
@@ -57,10 +58,11 @@ export default function ReportsPage() {
 
   const buildUrl = useCallback(() => {
     const params = new URLSearchParams({ period })
-    if (period === "daily" && dateValue) {
-      params.set("from", dateValue)
-      params.set("to", dateValue)
-    } else if (period === "weekly" && dateValue) {
+    const dateStr = dateValue ? dateValue.toISOString().split("T")[0] : ""
+    if (period === "daily" && dateStr) {
+      params.set("from", dateStr)
+      params.set("to", dateStr)
+    } else if (period === "weekly" && dateStr) {
       const d = new Date(dateValue)
       const start = new Date(d)
       start.setDate(d.getDate() - d.getDay())
@@ -167,10 +169,10 @@ export default function ReportsPage() {
 
           <div className="flex items-center gap-2">
             {period === "daily" && (
-              <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} className="w-36 h-9" />
+              <DatePicker value={dateValue} onChange={(d) => d && setDateValue(d)} className="w-36 h-9" />
             )}
             {period === "weekly" && (
-              <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} className="w-36 h-9" />
+              <DatePicker value={dateValue} onChange={(d) => d && setDateValue(d)} className="w-36 h-9" />
             )}
             {period === "monthly" && (
               <Input type="month" value={monthValue} onChange={(e) => setMonthValue(e.target.value)} className="w-36 h-9" />
