@@ -64,6 +64,13 @@
       "when": 1779947149473,
       "tag": "0008_medical_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779951517979,
+      "tag": "0009_smart_loki",
+      "breakpoints": true
     }
   ]
 }

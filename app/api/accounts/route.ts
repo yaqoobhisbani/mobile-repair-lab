@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { accounts } from "@/db/schema"
 import { desc } from "drizzle-orm"
+import { insertTransaction } from "@/db/transactions"
 
 export async function GET() {
   try {
@@ -38,6 +39,17 @@ export async function POST(request: Request) {
         description: description?.trim() || null,
       })
       .returning()
+
+    const initialBalance = parseFloat(balance || "0")
+    if (initialBalance > 0) {
+      await insertTransaction(
+        account.id,
+        "credit",
+        initialBalance,
+        "Opening balance",
+        "opening_balance"
+      )
+    }
 
     return NextResponse.json({ account }, { status: 201 })
   } catch {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { expenses, accounts } from "@/db/schema"
 import { eq, desc, sql } from "drizzle-orm"
+import { insertTransaction } from "@/db/transactions"
 
 export async function GET() {
   try {
@@ -77,6 +78,15 @@ export async function POST(request: Request) {
         date: date ? new Date(date) : new Date(),
       })
       .returning()
+
+    await insertTransaction(
+      numericAccountId,
+      "debit",
+      parsedAmount,
+      `Expense: ${description.trim()}`,
+      "expense",
+      String(expense.id)
+    )
 
     return NextResponse.json({ expense }, { status: 201 })
   } catch {

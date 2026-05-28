@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { tickets, customers, ticketItems, inventory, accounts, ticketStatusHistory } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
+import { insertTransaction } from "@/db/transactions"
 
 export async function GET(
   _request: Request,
@@ -163,6 +164,14 @@ export async function PUT(
           .update(accounts)
           .set({ balance: sql`${accounts.balance} - ${oldPaidAmount}` })
           .where(eq(accounts.id, current.paymentAccountId))
+        await insertTransaction(
+          current.paymentAccountId,
+          "debit",
+          oldPaidAmount,
+          `Reversed payment for Ticket ${id}`,
+          "ticket",
+          id
+        )
       }
 
       if (newAccountId && newPaidAmount > 0) {
@@ -170,6 +179,14 @@ export async function PUT(
           .update(accounts)
           .set({ balance: sql`${accounts.balance} + ${newPaidAmount}` })
           .where(eq(accounts.id, newAccountId))
+        await insertTransaction(
+          newAccountId,
+          "credit",
+          newPaidAmount,
+          `Payment received for Ticket ${id}`,
+          "ticket",
+          id
+        )
       }
     }
 

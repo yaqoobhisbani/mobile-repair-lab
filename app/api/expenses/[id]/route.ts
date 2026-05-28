@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { expenses, accounts } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
+import { insertTransaction } from "@/db/transactions"
 
 export async function DELETE(
   _request: Request,
@@ -31,6 +32,15 @@ export async function DELETE(
       .update(accounts)
       .set({ balance: sql`${accounts.balance} + ${amount}` })
       .where(eq(accounts.id, expense.accountId))
+
+    await insertTransaction(
+      expense.accountId,
+      "credit",
+      amount,
+      `Expense deleted: ${expense.description}`,
+      "expense",
+      String(numericId)
+    )
 
     await db.delete(expenses).where(eq(expenses.id, numericId))
 

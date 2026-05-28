@@ -136,3 +136,16 @@ export const expenses = pgTable("expenses", {
   date: timestamp("date").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id")
+    .notNull()
+    .references(() => accounts.id),
+  type: varchar("type", { length: 10 }).notNull(), // "credit" | "debit"
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  referenceType: varchar("reference_type", { length: 50 }).notNull(), // "ticket" | "expense" | "opening_balance"
+  referenceId: varchar("reference_id", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
