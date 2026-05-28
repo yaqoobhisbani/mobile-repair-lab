@@ -272,53 +272,50 @@ export default function DashboardOverview() {
 
         <StaggerContainer className="grid gap-4 lg:grid-cols-2">
           <StaggerItem>
-            <HoverCard>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Recent Tickets</CardTitle>
-                  </div>
-                  <Link href="/dashboard/tickets">
-                    <Button variant="ghost" size="sm">
-                      View All <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </Link>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentTickets.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4 text-center">No tickets yet.</p>
-                    ) : (
-                      recentTickets.map((ticket) => (
-                        <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`} className="flex items-center justify-between group">
-                          <div>
-                            <p className="text-sm font-medium group-hover:underline">{ticket.customerName ?? "Unknown"}</p>
-                            <p className="text-xs text-muted-foreground">{ticket.id} — {capitalize(ticket.brand)} {ticket.model}</p>
-                          </div>
-                          <TicketStatusBadge status={ticket.status} />
-                        </Link>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </HoverCard>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Recent Tickets</CardTitle>
+                </div>
+                <Link href="/dashboard/tickets">
+                  <Button variant="ghost" size="sm">
+                    View All <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentTickets.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">No tickets yet.</p>
+                  ) : (
+                    recentTickets.map((ticket) => (
+                      <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`} className="flex items-center justify-between group">
+                        <div>
+                          <p className="text-sm font-medium group-hover:underline">{ticket.customerName ?? "Unknown"}</p>
+                          <p className="text-xs text-muted-foreground">{ticket.id} — {capitalize(ticket.brand)} {ticket.model}</p>
+                        </div>
+                        <TicketStatusBadge status={ticket.status} />
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </StaggerItem>
 
           <StaggerItem>
-            <HoverCard>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Low Stock Items</CardTitle>
-                  </div>
-                  <Link href="/dashboard/inventory">
-                    <Button variant="ghost" size="sm">
-                      View All <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </Link>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Low Stock Items</CardTitle>
+                </div>
+                <Link href="/dashboard/inventory">
+                  <Button variant="ghost" size="sm">
+                    View All <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
                   <div className="space-y-4">
                     {lowStockItems.length === 0 ? (
                       <p className="text-sm text-muted-foreground py-4 text-center">All items are well stocked.</p>
@@ -338,7 +335,6 @@ export default function DashboardOverview() {
                   </div>
                 </CardContent>
               </Card>
-            </HoverCard>
           </StaggerItem>
         </StaggerContainer>
       </div>
