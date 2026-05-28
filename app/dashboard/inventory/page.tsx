@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import Link from "next/link"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
@@ -16,6 +15,9 @@ import { Plus, Search, AlertTriangle, X, Pencil, Trash2, Package, DollarSign, XC
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { useConfirm } from "@/hooks/use-confirm"
+import { SlideOver } from "@/components/slide-over"
+import { CreateInventoryForm } from "@/components/forms/create-inventory-form"
+import { EditInventoryForm } from "@/components/forms/edit-inventory-form"
 
 interface InventoryItem {
   id: number
@@ -38,6 +40,19 @@ export default function InventoryPage() {
   const [page, setPage] = useState(1)
   const [error, setError] = useState("")
   const { confirm, dialog } = useConfirm()
+  const [slideOverOpen, setSlideOverOpen] = useState(false)
+  const [editItemId, setEditItemId] = useState<number | null>(null)
+
+  function openCreateSlide() { setEditItemId(null); setSlideOverOpen(true) }
+  function openEditSlide(id: number) { setEditItemId(id); setSlideOverOpen(true) }
+  function closeSlide() { setSlideOverOpen(false); setEditItemId(null) }
+
+  function refreshItems() {
+    fetch("/api/inventory")
+      .then((res) => res.ok ? res.json() : Promise.reject())
+      .then((data) => setItems(data.items ?? []))
+      .catch(() => toast.error("Failed to refresh inventory"))
+  }
 
   useEffect(() => {
     fetch("/api/inventory")
@@ -130,12 +145,10 @@ export default function InventoryPage() {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Inventory</h1>
             <p className="text-muted-foreground">Manage spare parts and components.</p>
           </div>
-          <Link href="/dashboard/inventory/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Part
-            </Button>
-          </Link>
+          <Button onClick={openCreateSlide}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Part
+          </Button>
         </div>
 
         {!loading && (
@@ -280,12 +293,10 @@ export default function InventoryPage() {
                     title="No inventory items"
                     description="Get started by adding your first spare part to the inventory."
                     action={
-                      <Link href="/dashboard/inventory/new">
-                        <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Part
-                        </Button>
-                      </Link>
+                      <Button onClick={openCreateSlide}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Part
+                      </Button>
                     }
                   />
                 ) : (
@@ -334,11 +345,14 @@ export default function InventoryPage() {
                             <TableCell>{item.sellingPrice ? `Rs. ${Number(item.sellingPrice).toFixed(2)}` : "—"}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
-                                <Link href={`/dashboard/inventory/${item.id}`}>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </Link>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openEditSlide(item.id)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -367,6 +381,20 @@ export default function InventoryPage() {
           </Card>
         </div>
       {dialog}
+
+      <SlideOver
+        open={slideOverOpen}
+        onOpenChange={(open) => { if (!open) closeSlide() }}
+        title={editItemId ? "Edit Part" : "Add Part"}
+        description={editItemId ? "Update the part information and pricing." : "Add a new spare part to the catalog."}
+        gradient="inventory"
+      >
+        {editItemId ? (
+          <EditInventoryForm itemId={editItemId} onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+        ) : (
+          <CreateInventoryForm onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+        )}
+      </SlideOver>
     </PageTransition>
   )
 }
