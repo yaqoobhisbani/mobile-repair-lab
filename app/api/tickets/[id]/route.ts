@@ -28,6 +28,7 @@ export async function GET(
         paymentStatus: tickets.paymentStatus,
         paymentAccountId: tickets.paymentAccountId,
         paymentAccountName: accounts.name,
+        paymentAccountType: accounts.type,
         amountPaid: tickets.amountPaid,
         laborCost: tickets.laborCost,
 
@@ -99,96 +100,102 @@ export async function PUT(
 
     const resolvedLaborCost = laborCost !== undefined ? laborCost : current.laborCost
 
-    const items = await db
-      .select({
-        sellingPrice: inventory.sellingPrice,
-        quantityUsed: ticketItems.quantityUsed,
-      })
-      .from(ticketItems)
-      .leftJoin(inventory, eq(ticketItems.inventoryId, inventory.id))
-      .where(eq(ticketItems.ticketId, id))
+    const ticket = await db.transaction(async (tx) => {
+      const items = await tx
+        .select({
+          sellingPrice: inventory.sellingPrice,
+          quantityUsed: ticketItems.quantityUsed,
+        })
+        .from(ticketItems)
+        .leftJoin(inventory, eq(ticketItems.inventoryId, inventory.id))
+        .where(eq(ticketItems.ticketId, id))
 
-    const partsTotal = items.reduce(
-      (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
-      0
-    )
-    const resolvedLabor = parseFloat(String(resolvedLaborCost ?? "0"))
-    const totalAmount = partsTotal + resolvedLabor
+      const partsTotal = items.reduce(
+        (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
+        0
+      )
+      const resolvedLabor = parseFloat(String(resolvedLaborCost ?? "0"))
+      const totalAmount = partsTotal + resolvedLabor
 
-    const resolvedAmountPaid =
-      paymentStatus === "paid" ? totalAmount
-      : paymentStatus === "unpaid" ? 0
-      : amountPaid !== undefined ? parseFloat(String(amountPaid))
-      : parseFloat(String(current.amountPaid ?? "0"))
+      const resolvedAmountPaid =
+        paymentStatus === "paid" ? totalAmount
+        : paymentStatus === "unpaid" ? 0
+        : amountPaid !== undefined ? parseFloat(String(amountPaid))
+        : parseFloat(String(current.amountPaid ?? "0"))
 
-    const updateData: Record<string, any> = {}
-    if (status !== undefined) updateData.status = status
-    if (problemDescription !== undefined) updateData.problemDescription = problemDescription
-    if (laborCost !== undefined) updateData.laborCost = laborCost ? String(laborCost) : null
-    if (imei !== undefined) updateData.imei = imei
-    if (passcode !== undefined) updateData.passcode = passcode
-    if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus
-    if (paymentAccountId !== undefined) {
-      updateData.paymentAccountId = paymentAccountId ? Number(paymentAccountId) : null
-    }
-    updateData.amountPaid = String(resolvedAmountPaid)
+      const updateData: Record<string, any> = {}
+      if (status !== undefined) updateData.status = status
+      if (problemDescription !== undefined) updateData.problemDescription = problemDescription
+      if (laborCost !== undefined) updateData.laborCost = laborCost ? String(laborCost) : null
+      if (imei !== undefined) updateData.imei = imei
+      if (passcode !== undefined) updateData.passcode = passcode
+      if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus
+      if (paymentAccountId !== undefined) {
+        updateData.paymentAccountId = paymentAccountId ? Number(paymentAccountId) : null
+      }
+      updateData.amountPaid = String(resolvedAmountPaid)
 
-    const [ticket] = await db
-      .update(tickets)
-      .set(updateData)
-      .where(eq(tickets.id, id))
-      .returning()
+      const [t] = await tx
+        .update(tickets)
+        .set(updateData)
+        .where(eq(tickets.id, id))
+        .returning()
 
-    if (status !== undefined && status !== current.status) {
-      await db.insert(ticketStatusHistory).values({
-        ticketId: id,
-        status,
-      })
-    }
-
-    const newPaymentStatus = paymentStatus ?? current.paymentStatus
-    const newAccountId = paymentAccountId !== undefined
-      ? (paymentAccountId ? Number(paymentAccountId) : null)
-      : current.paymentAccountId
-    const oldPaidAmount = parseFloat(String(current.amountPaid ?? "0"))
-    const newPaidAmount = resolvedAmountPaid
-
-    const paymentFieldsChanged =
-      (paymentStatus !== undefined && newPaymentStatus !== current.paymentStatus) ||
-      (paymentAccountId !== undefined && newAccountId !== current.paymentAccountId) ||
-      newPaidAmount !== oldPaidAmount
-
-    if (paymentFieldsChanged) {
-      if (current.paymentAccountId && oldPaidAmount > 0) {
-        await db
-          .update(accounts)
-          .set({ balance: sql`${accounts.balance} - ${oldPaidAmount}` })
-          .where(eq(accounts.id, current.paymentAccountId))
-        await insertTransaction(
-          current.paymentAccountId,
-          "debit",
-          oldPaidAmount,
-          `Reversed payment for Ticket ${id}`,
-          "ticket",
-          id
-        )
+      if (status !== undefined && status !== current.status) {
+        await tx.insert(ticketStatusHistory).values({
+          ticketId: id,
+          status,
+        })
       }
 
-      if (newAccountId && newPaidAmount > 0) {
-        await db
-          .update(accounts)
-          .set({ balance: sql`${accounts.balance} + ${newPaidAmount}` })
-          .where(eq(accounts.id, newAccountId))
-        await insertTransaction(
-          newAccountId,
-          "credit",
-          newPaidAmount,
-          `Payment received for Ticket ${id}`,
-          "ticket",
-          id
-        )
+      const newPaymentStatus = paymentStatus ?? current.paymentStatus
+      const newAccountId = paymentAccountId !== undefined
+        ? (paymentAccountId ? Number(paymentAccountId) : null)
+        : current.paymentAccountId
+      const oldPaidAmount = parseFloat(String(current.amountPaid ?? "0"))
+      const newPaidAmount = resolvedAmountPaid
+
+      const paymentFieldsChanged =
+        (paymentStatus !== undefined && newPaymentStatus !== current.paymentStatus) ||
+        (paymentAccountId !== undefined && newAccountId !== current.paymentAccountId) ||
+        newPaidAmount !== oldPaidAmount
+
+      if (paymentFieldsChanged) {
+        if (current.paymentAccountId && oldPaidAmount > 0) {
+          await tx
+            .update(accounts)
+            .set({ balance: sql`${accounts.balance} - ${oldPaidAmount}` })
+            .where(eq(accounts.id, current.paymentAccountId))
+          await insertTransaction(
+            current.paymentAccountId,
+            "debit",
+            oldPaidAmount,
+            `Reversed payment for Ticket ${id}`,
+            "ticket",
+            id,
+            tx
+          )
+        }
+
+        if (newAccountId && newPaidAmount > 0) {
+          await tx
+            .update(accounts)
+            .set({ balance: sql`${accounts.balance} + ${newPaidAmount}` })
+            .where(eq(accounts.id, newAccountId))
+          await insertTransaction(
+            newAccountId,
+            "credit",
+            newPaidAmount,
+            `Payment received for Ticket ${id}`,
+            "ticket",
+            id,
+            tx
+          )
+        }
       }
-    }
+
+      return t
+    })
 
     return NextResponse.json({ ticket })
   } catch {
@@ -203,8 +210,10 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    await db.delete(ticketItems).where(eq(ticketItems.ticketId, id))
-    await db.delete(tickets).where(eq(tickets.id, id))
+    await db.transaction(async (tx) => {
+      await tx.delete(ticketItems).where(eq(ticketItems.ticketId, id))
+      await tx.delete(tickets).where(eq(tickets.id, id))
+    })
 
     return NextResponse.json({ success: true })
   } catch {

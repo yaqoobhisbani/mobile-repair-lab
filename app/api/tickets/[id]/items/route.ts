@@ -53,26 +53,35 @@ export async function POST(
           { status: 400 }
         )
       }
-      ;[item] = await db
-        .update(ticketItems)
-        .set({ quantityUsed: newQty })
-        .where(eq(ticketItems.id, existing.id))
-        .returning()
+      item = await db.transaction(async (tx) => {
+        const [i] = await tx
+          .update(ticketItems)
+          .set({ quantityUsed: newQty })
+          .where(eq(ticketItems.id, existing.id))
+          .returning()
+        await tx
+          .update(inventory)
+          .set({ stockQty: part.stockQty - quantityUsed })
+          .where(eq(inventory.id, inventoryId))
+        return i
+      })
     } else {
-      ;[item] = await db
-        .insert(ticketItems)
-        .values({
-          ticketId: id,
-          inventoryId,
-          quantityUsed,
-        })
-        .returning()
+      item = await db.transaction(async (tx) => {
+        const [i] = await tx
+          .insert(ticketItems)
+          .values({
+            ticketId: id,
+            inventoryId,
+            quantityUsed,
+          })
+          .returning()
+        await tx
+          .update(inventory)
+          .set({ stockQty: part.stockQty - quantityUsed })
+          .where(eq(inventory.id, inventoryId))
+        return i
+      })
     }
-
-    await db
-      .update(inventory)
-      .set({ stockQty: part.stockQty - quantityUsed })
-      .where(eq(inventory.id, inventoryId))
 
     return NextResponse.json({ item }, { status: 201 })
   } catch {
@@ -108,14 +117,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Item not found" }, { status: 404 })
     }
 
-    await db
-      .update(inventory)
-      .set({ stockQty: sql`${inventory.stockQty} + ${item.quantityUsed}` })
-      .where(eq(inventory.id, item.inventoryId))
+    await db.transaction(async (tx) => {
+      await tx
+        .update(inventory)
+        .set({ stockQty: sql`${inventory.stockQty} + ${item.quantityUsed}` })
+        .where(eq(inventory.id, item.inventoryId))
 
-    await db
-      .delete(ticketItems)
-      .where(eq(ticketItems.id, itemId))
+      await tx
+        .delete(ticketItems)
+        .where(eq(ticketItems.id, itemId))
+    })
 
     return NextResponse.json({ success: true })
   } catch {

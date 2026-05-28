@@ -63,30 +63,35 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
-    await db
-      .update(accounts)
-      .set({ balance: sql`${accounts.balance} - ${parsedAmount}` })
-      .where(eq(accounts.id, numericAccountId))
+    const expense = await db.transaction(async (tx) => {
+      await tx
+        .update(accounts)
+        .set({ balance: sql`${accounts.balance} - ${parsedAmount}` })
+        .where(eq(accounts.id, numericAccountId))
 
-    const [expense] = await db
-      .insert(expenses)
-      .values({
-        description: description.trim(),
-        amount: String(parsedAmount),
-        category: category?.trim() || null,
-        accountId: numericAccountId,
-        date: date ? new Date(date) : new Date(),
-      })
-      .returning()
+      const [e] = await tx
+        .insert(expenses)
+        .values({
+          description: description.trim(),
+          amount: String(parsedAmount),
+          category: category?.trim() || null,
+          accountId: numericAccountId,
+          date: date ? new Date(date) : new Date(),
+        })
+        .returning()
 
-    await insertTransaction(
-      numericAccountId,
-      "debit",
-      parsedAmount,
-      `Expense: ${description.trim()}`,
-      "expense",
-      String(expense.id)
-    )
+      await insertTransaction(
+        numericAccountId,
+        "debit",
+        parsedAmount,
+        `Expense: ${description.trim()}`,
+        "expense",
+        String(e.id),
+        tx
+      )
+
+      return e
+    })
 
     return NextResponse.json({ expense }, { status: 201 })
   } catch {

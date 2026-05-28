@@ -30,26 +30,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid account type" }, { status: 400 })
     }
 
-    const [account] = await db
-      .insert(accounts)
-      .values({
-        name: name.trim(),
-        type,
-        balance: balance ? String(balance) : "0",
-        description: description?.trim() || null,
-      })
-      .returning()
+    const account = await db.transaction(async (tx) => {
+      const [a] = await tx
+        .insert(accounts)
+        .values({
+          name: name.trim(),
+          type,
+          balance: balance ? String(balance) : "0",
+          description: description?.trim() || null,
+        })
+        .returning()
 
-    const initialBalance = parseFloat(balance || "0")
-    if (initialBalance > 0) {
-      await insertTransaction(
-        account.id,
-        "credit",
-        initialBalance,
-        "Opening balance",
-        "opening_balance"
-      )
-    }
+      const initialBalance = parseFloat(balance || "0")
+      if (initialBalance > 0) {
+        await insertTransaction(
+          a.id,
+          "credit",
+          initialBalance,
+          "Opening balance",
+          "opening_balance",
+          undefined,
+          tx
+        )
+      }
+
+      return a
+    })
 
     return NextResponse.json({ account }, { status: 201 })
   } catch {

@@ -28,21 +28,24 @@ export async function DELETE(
 
     const amount = parseFloat(expense.amount ?? "0")
 
-    await db
-      .update(accounts)
-      .set({ balance: sql`${accounts.balance} + ${amount}` })
-      .where(eq(accounts.id, expense.accountId))
+    await db.transaction(async (tx) => {
+      await tx
+        .update(accounts)
+        .set({ balance: sql`${accounts.balance} + ${amount}` })
+        .where(eq(accounts.id, expense.accountId))
 
-    await insertTransaction(
-      expense.accountId,
-      "credit",
-      amount,
-      `Expense deleted: ${expense.description}`,
-      "expense",
-      String(numericId)
-    )
+      await insertTransaction(
+        expense.accountId,
+        "credit",
+        amount,
+        `Expense deleted: ${expense.description}`,
+        "expense",
+        String(numericId),
+        tx
+      )
 
-    await db.delete(expenses).where(eq(expenses.id, numericId))
+      await tx.delete(expenses).where(eq(expenses.id, numericId))
+    })
 
     return NextResponse.json({ success: true })
   } catch {

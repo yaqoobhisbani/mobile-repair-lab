@@ -19,6 +19,7 @@ interface TicketData {
   model: string
   paymentStatus: string
   paymentAccountName: string | null
+  paymentAccountType: string | null
   laborCost: string | null
   createdAt: string
 }
@@ -201,8 +202,8 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
               <div className="w-64 space-y-2">
                 {ticket.paymentAccountName && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Account</span>
-                    <span>{ticket.paymentAccountName}</span>
+                    <span className="text-muted-foreground">Payment Method</span>
+                    <span>{ticket.paymentAccountType === "cash" ? "Cash" : "Bank Transfer"}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg">

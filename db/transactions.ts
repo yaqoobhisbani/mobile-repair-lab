@@ -7,9 +7,11 @@ export async function insertTransaction(
   amount: number,
   description: string,
   referenceType: "ticket" | "expense" | "opening_balance" | "top_up",
-  referenceId?: string
+  referenceId?: string,
+  tx?: any
 ) {
-  await db.insert(transactions).values({
+  const conn = tx ?? db
+  await conn.insert(transactions).values({
     accountId,
     type,
     amount: String(amount),

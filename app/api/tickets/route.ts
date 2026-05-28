@@ -69,37 +69,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Customer, brand, model, and problem category are required" }, { status: 400 })
     }
 
-    const [lastTicket] = await db
-      .select({ id: tickets.id })
-      .from(tickets)
-      .orderBy(desc(tickets.id))
-      .limit(1)
+    const ticket = await db.transaction(async (tx) => {
+      const [lastTicket] = await tx
+        .select({ id: tickets.id })
+        .from(tickets)
+        .orderBy(desc(tickets.id))
+        .limit(1)
 
-    let nextId = "TKT-001"
-    if (lastTicket) {
-      const num = parseInt(lastTicket.id.replace("TKT-", ""), 10)
-      nextId = `TKT-${String(num + 1).padStart(3, "0")}`
-    }
+      let nextId = "TKT-001"
+      if (lastTicket) {
+        const num = parseInt(lastTicket.id.replace("TKT-", ""), 10)
+        nextId = `TKT-${String(num + 1).padStart(3, "0")}`
+      }
 
-    const [ticket] = await db
-      .insert(tickets)
-      .values({
-        id: nextId,
-        customerId,
-        brand,
-        model,
-        imei: imei || null,
-        passcode: passcode || null,
-        problemCategory,
-        problemDescription: problemDescription || null,
-        laborCost: laborCost ? String(laborCost) : null,
+      const [t] = await tx
+        .insert(tickets)
+        .values({
+          id: nextId,
+          customerId,
+          brand,
+          model,
+          imei: imei || null,
+          passcode: passcode || null,
+          problemCategory,
+          problemDescription: problemDescription || null,
+          laborCost: laborCost ? String(laborCost) : null,
+        })
+        .returning()
 
+      await tx.insert(ticketStatusHistory).values({
+        ticketId: nextId,
+        status: "received",
       })
-      .returning()
 
-    await db.insert(ticketStatusHistory).values({
-      ticketId: nextId,
-      status: "received",
+      return t
     })
 
     return NextResponse.json({ ticket }, { status: 201 })

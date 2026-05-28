@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { accounts } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { insertTransaction } from "@/db/transactions"
 
 export async function POST(
@@ -33,21 +33,25 @@ export async function POST(
       return NextResponse.json({ error: "Amount must be greater than 0" }, { status: 400 })
     }
 
-    const newBalance = parseFloat(account.balance) + amount
+    const updated = await db.transaction(async (tx) => {
+      const [u] = await tx
+        .update(accounts)
+        .set({ balance: sql`${accounts.balance} + ${amount}` })
+        .where(eq(accounts.id, numericId))
+        .returning()
 
-    const [updated] = await db
-      .update(accounts)
-      .set({ balance: String(newBalance) })
-      .where(eq(accounts.id, numericId))
-      .returning()
+      await insertTransaction(
+        numericId,
+        "credit",
+        amount,
+        body.description?.trim() || "Account top-up",
+        "top_up",
+        undefined,
+        tx
+      )
 
-    await insertTransaction(
-      numericId,
-      "credit",
-      amount,
-      body.description?.trim() || "Account top-up",
-      "top_up"
-    )
+      return u
+    })
 
     return NextResponse.json({ account: updated })
   } catch {

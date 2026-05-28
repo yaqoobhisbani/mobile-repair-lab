@@ -253,6 +253,7 @@ export default function AccountsPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -262,6 +263,7 @@ export default function AccountsPage() {
                       <TableCell className="font-medium">{account.name}</TableCell>
                       <TableCell>{typeLabels[account.type] || account.type}</TableCell>
                       <TableCell className="text-muted-foreground">{account.description || "—"}</TableCell>
+                      <TableCell className="text-right font-medium">Rs. {parseFloat(account.balance).toLocaleString()}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
