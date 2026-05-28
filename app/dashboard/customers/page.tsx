@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import Link from "next/link"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +13,9 @@ import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
 import { useConfirm } from "@/hooks/use-confirm"
+import { SlideOver } from "@/components/slide-over"
+import { CreateCustomerForm } from "@/components/forms/create-customer-form"
+import { EditCustomerForm } from "@/components/forms/edit-customer-form"
 
 interface Customer {
   id: number
@@ -31,6 +33,29 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [slideOverOpen, setSlideOverOpen] = useState(false)
+  const [editCustomerId, setEditCustomerId] = useState<number | null>(null)
+
+  const openCreateSlide = useCallback(() => {
+    setEditCustomerId(null)
+    setSlideOverOpen(true)
+  }, [])
+
+  const openEditSlide = useCallback((id: number) => {
+    setEditCustomerId(id)
+    setSlideOverOpen(true)
+  }, [])
+
+  const closeSlide = useCallback(() => {
+    setSlideOverOpen(false)
+    setEditCustomerId(null)
+  }, [])
+
+  const refreshItems = useCallback(async () => {
+    await fetch("/api/customers")
+      .then((res) => res.json())
+      .then((data) => setCustomers(data.customers ?? []))
+  }, [])
 
   useEffect(() => {
     fetch("/api/customers")
@@ -98,12 +123,10 @@ export default function CustomersPage() {
             </>
           )}
         </div>
-        <Link href="/dashboard/customers/new">
-          <Button>
+        <Button onClick={openCreateSlide}>
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
-        </Link>
       </div>
 
       {loading ? (
@@ -226,9 +249,7 @@ export default function CustomersPage() {
               }
               action={
                 customers.length === 0 ? (
-                  <Link href="/dashboard/customers/new">
-                    <Button><Plus className="h-4 w-4 mr-2" />Add Customer</Button>
-                  </Link>
+                  <Button onClick={openCreateSlide}><Plus className="h-4 w-4 mr-2" />Add Customer</Button>
                 ) : undefined
               }
             />
@@ -256,11 +277,14 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Link href={`/dashboard/customers/${customer.id}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEditSlide(customer.id)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -288,6 +312,20 @@ export default function CustomersPage() {
       </Card>
     </div>
       {dialog}
+
+      <SlideOver
+        open={slideOverOpen}
+        onOpenChange={(open) => { if (!open) closeSlide() }}
+        title={editCustomerId ? "Edit Customer" : "Add Customer"}
+        description={editCustomerId ? "Update the customer details below." : "Add a new customer to your directory."}
+        gradient="customers"
+      >
+        {editCustomerId ? (
+          <EditCustomerForm customerId={editCustomerId} onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+        ) : (
+          <CreateCustomerForm onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+        )}
+      </SlideOver>
     </PageTransition>
   )
 }
