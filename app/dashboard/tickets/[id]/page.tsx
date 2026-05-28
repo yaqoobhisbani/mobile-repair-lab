@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { AddPartDialog } from "@/components/add-part-dialog"
 import { ArrowLeft, Download, Loader2, Plus, Save, Trash2 } from "lucide-react"
+import { capitalize } from "@/lib/utils"
 import { toast } from "sonner"
 import { useConfirm } from "@/hooks/use-confirm"
 import { cn } from "@/lib/utils"
@@ -278,7 +279,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Ticket {id}</h1>
               <TicketStatusBadge status={draftStatus} />
             </div>
-            <p className="text-muted-foreground">{ticket.brand} {ticket.model} — {ticket.customerName}</p>
+            <p className="text-muted-foreground">{capitalize(ticket.brand)} {ticket.model} — {ticket.customerName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

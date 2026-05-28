@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/empty-state"
 import { useConfirm } from "@/hooks/use-confirm"
 import { SlideOver } from "@/components/slide-over"
 import { CreateTicketForm } from "@/components/forms/create-ticket-form"
+import { capitalize } from "@/lib/utils"
 
 interface Ticket {
   id: string
@@ -290,7 +291,7 @@ export default function TicketsPage() {
                         </Link>
                       </TableCell>
                       <TableCell>{ticket.customerName ?? "—"}</TableCell>
-                      <TableCell>{ticket.brand} {ticket.model}</TableCell>
+                      <TableCell>{capitalize(ticket.brand)} {ticket.model}</TableCell>
                       <TableCell><TicketStatusBadge status={ticket.status} /></TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">

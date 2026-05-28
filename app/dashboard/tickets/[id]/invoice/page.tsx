@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Loader2, Printer } from "lucide-react"
+import { capitalize } from "@/lib/utils"
 
 interface TicketData {
   id: string
@@ -130,7 +131,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
               </div>
               <div className="text-right text-sm text-muted-foreground">
                 <p>Issue Date: {formatDate(ticket.createdAt)}</p>
-                <p className="mt-1">Device: {ticket.brand} {ticket.model}</p>
+                <p className="mt-1">Device: {capitalize(ticket.brand)} {ticket.model}</p>
                 <p>Ticket: {id}</p>
               </div>
             </div>

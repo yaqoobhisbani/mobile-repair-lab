@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
+import { capitalize } from "@/lib/utils"
 
 interface Ticket {
   id: string
@@ -292,7 +293,7 @@ export default function DashboardOverview() {
                         <Link key={ticket.id} href={`/dashboard/tickets/${ticket.id}`} className="flex items-center justify-between group">
                           <div>
                             <p className="text-sm font-medium group-hover:underline">{ticket.customerName ?? "Unknown"}</p>
-                            <p className="text-xs text-muted-foreground">{ticket.id} — {ticket.brand} {ticket.model}</p>
+                            <p className="text-xs text-muted-foreground">{ticket.id} — {capitalize(ticket.brand)} {ticket.model}</p>
                           </div>
                           <TicketStatusBadge status={ticket.status} />
                         </Link>
