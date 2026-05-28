@@ -124,7 +124,7 @@ export default function ReportsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()) }}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32 bg-white dark:bg-card">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -144,7 +144,7 @@ export default function ReportsPage() {
             <select
               value={referenceDate.getFullYear()}
               onChange={(e) => setReferenceDate(new Date(Number(e.target.value), 0, 1))}
-              className="h-9 text-sm rounded-md border border-input bg-transparent px-3 w-28"
+              className="h-9 text-sm rounded-md border border-input bg-white dark:bg-card px-3 w-28"
             >
               {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((y) => (
                 <option key={y} value={y}>{y}</option>

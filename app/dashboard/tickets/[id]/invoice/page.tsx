@@ -23,6 +23,13 @@ interface TicketData {
   createdAt: string
 }
 
+interface ShopSettings {
+  shopName: string
+  shopAddress: string
+  shopPhone: string
+  currency: string
+}
+
 const paymentBadgeVariant: Record<string, "secondary" | "default" | "outline"> = {
   unpaid: "secondary",
   partially_paid: "outline",
@@ -41,18 +48,29 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
 }
 
+const currencySymbols: Record<string, string> = {
+  PKR: "Rs.",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+}
+
 export default function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [ticket, setTicket] = useState<TicketData | null>(null)
   const [items, setItems] = useState<TicketItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [settings, setSettings] = useState<ShopSettings | null>(null)
 
   useEffect(() => {
-    fetch(`/api/tickets/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setTicket(data.ticket)
-        setItems(data.items)
+    Promise.all([
+      fetch(`/api/tickets/${id}`).then((r) => r.json()),
+      fetch("/api/settings").then((r) => r.json()),
+    ])
+      .then(([ticketData, settingsData]) => {
+        setTicket(ticketData.ticket)
+        setItems(ticketData.items)
+        setSettings(settingsData.settings)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -74,6 +92,13 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
       </div>
     )
   }
+
+  const s = settings ?? { shopName: "Mobile Repair Lab", shopAddress: "123 Repair Street, City, State 12345", shopPhone: "(555) 987-6543", currency: "PKR" }
+  const sym = currencySymbols[s.currency] ?? "Rs."
+
+  const [firstLine, ...restLines] = s.shopAddress.split(",").map((l: string) => l.trim())
+  const addressLine1 = firstLine ?? ""
+  const addressLine2 = restLines.length > 0 ? restLines.join(", ") : ""
 
   const partsTotal = items.reduce((sum, item) => {
     return sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed)
@@ -106,10 +131,10 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
           <div id="invoice-content" className="space-y-8">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Mobile Repair Lab</h2>
-                <p className="text-sm text-muted-foreground">123 Repair Street</p>
-                <p className="text-sm text-muted-foreground">City, State 12345</p>
-                <p className="text-sm text-muted-foreground">Phone: (555) 987-6543</p>
+                <h2 className="text-2xl font-bold">{s.shopName}</h2>
+                <p className="text-sm text-muted-foreground">{addressLine1}</p>
+                {addressLine2 && <p className="text-sm text-muted-foreground">{addressLine2}</p>}
+                <p className="text-sm text-muted-foreground">Phone: {s.shopPhone}</p>
               </div>
               <div className="text-right">
                 <h3 className="text-lg font-semibold">Invoice</h3>
@@ -155,9 +180,9 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                       <p className="text-xs text-muted-foreground">{item.sku}</p>
                     </td>
                     <td className="py-3 text-right">{item.quantityUsed}</td>
-                    <td className="py-3 text-right">{item.sellingPrice ? `Rs. ${item.sellingPrice}` : "—"}</td>
+                    <td className="py-3 text-right">{item.sellingPrice ? `${sym} ${item.sellingPrice}` : "—"}</td>
                     <td className="py-3 text-right">
-                      Rs. {(parseFloat(item.sellingPrice ?? "0") * item.quantityUsed).toFixed(2)}
+                      {sym} {(parseFloat(item.sellingPrice ?? "0") * item.quantityUsed).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -166,8 +191,8 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                     <p className="font-medium">Labor / Service Fee</p>
                   </td>
                   <td className="py-3 text-right">1</td>
-                  <td className="py-3 text-right">{labor > 0 ? `Rs. ${labor.toFixed(2)}` : "—"}</td>
-                  <td className="py-3 text-right">{labor > 0 ? `Rs. ${labor.toFixed(2)}` : "—"}</td>
+                  <td className="py-3 text-right">{labor > 0 ? `${sym} ${labor.toFixed(2)}` : "—"}</td>
+                  <td className="py-3 text-right">{labor > 0 ? `${sym} ${labor.toFixed(2)}` : "—"}</td>
                 </tr>
               </tbody>
             </table>
@@ -182,7 +207,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                 )}
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>Rs. {grandTotal.toFixed(2)}</span>
+                  <span>{sym} {grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

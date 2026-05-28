@@ -137,6 +137,14 @@ export const expenses = pgTable("expenses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  shopName: varchar("shop_name", { length: 255 }).notNull().default("Mobile Repair Lab"),
+  shopAddress: varchar("shop_address", { length: 500 }).notNull().default("123 Repair Street, City, State 12345"),
+  shopPhone: varchar("shop_phone", { length: 50 }).notNull().default("(555) 987-6543"),
+  currency: varchar("currency", { length: 10 }).notNull().default("PKR"),
+})
+
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id")

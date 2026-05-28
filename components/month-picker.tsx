@@ -39,7 +39,7 @@ export function MonthPicker({ value, onChange, className }: MonthPickerProps) {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn("w-full justify-start text-left font-normal bg-transparent", className)}
+          className={cn("w-full justify-start text-left font-normal bg-white dark:bg-card", className)}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {format(value, "MMMM yyyy")}

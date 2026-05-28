@@ -1,22 +1,59 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Save } from "lucide-react"
+import { Save, Loader2 } from "lucide-react"
 
 export default function SettingsPage() {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [currency, setCurrency] = useState("PKR")
   const [shopName, setShopName] = useState("Mobile Repair Lab")
   const [shopAddress, setShopAddress] = useState("123 Repair Street, City, State 12345")
   const [shopPhone, setShopPhone] = useState("(555) 987-6543")
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings) {
+          setShopName(data.settings.shopName)
+          setShopAddress(data.settings.shopAddress)
+          setShopPhone(data.settings.shopPhone)
+          setCurrency(data.settings.currency)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSaving(true)
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopName, shopAddress, shopPhone, currency }),
+      })
+    } catch {
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-muted-foreground">
+        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+        Loading settings...
+      </div>
+    )
   }
 
   return (
@@ -62,9 +99,12 @@ export default function SettingsPage() {
         <Separator />
 
         <div className="flex justify-end">
-          <Button type="submit">
-            <Save className="h-4 w-4 mr-2" />
-            Save Settings
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+            ) : (
+              <><Save className="h-4 w-4 mr-2" />Save Settings</>
+            )}
           </Button>
         </div>
       </form>

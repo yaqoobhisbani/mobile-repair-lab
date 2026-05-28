@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -42,6 +43,16 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
   const pathname = usePathname()
   const { user } = useAuth()
+  const [shopName, setShopName] = useState("Mobile Repair Lab")
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.settings?.shopName) setShopName(data.settings.shopName)
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="flex h-full flex-col gap-4 py-4">
@@ -50,7 +61,7 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
             MRL
           </div>
-          <span className="font-semibold">Mobile Repair Lab</span>
+          <span className="font-semibold">{shopName}</span>
         </Link>
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden">
