@@ -1,115 +1,71 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { ClipboardList, Package, DollarSign, AlertTriangle, ArrowRight } from "lucide-react"
-import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { capitalize } from "@/lib/utils"
-
-interface Ticket {
-  id: string
-  customerName: string | null
-  brand: string
-  model: string
-  status: string
-  paymentStatus: string
-  createdAt: string
-}
-
-interface InventoryItem {
-  id: number
-  partName: string
-  sku: string
-  stockQty: number
-  lowStockThreshold: number | null
-  costPrice: string | null
-  sellingPrice: string | null
-}
-
-interface Account {
-  id: number
-  name: string
-  type: string
-  balance: string
-}
-
-interface Expense {
-  id: number
-  amount: string
-  date: string
-}
+import { useTickets } from "@/hooks/queries/use-tickets"
+import { useInventory } from "@/hooks/queries/use-inventory"
+import { useAccounts } from "@/hooks/queries/use-accounts"
+import { useExpenses } from "@/hooks/queries/use-expenses"
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
 export default function DashboardOverview() {
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: tickets, isLoading: ticketsLoading } = useTickets()
+  const { data: inventory, isLoading: inventoryLoading } = useInventory()
+  const { data: accounts, isLoading: accountsLoading } = useAccounts()
+  const { data: expenses, isLoading: expensesLoading } = useExpenses()
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/tickets").then((r) => r.ok ? r.json() : { tickets: [] }),
-      fetch("/api/inventory").then((r) => r.ok ? r.json() : { items: [] }),
-      fetch("/api/accounts").then((r) => r.ok ? r.json() : { accounts: [] }),
-      fetch("/api/expenses").then((r) => r.ok ? r.json() : { expenses: [] }),
-    ]).then(([t, i, a, e]) => {
-      setTickets(t.tickets ?? [])
-      setInventory(i.items ?? [])
-      setAccounts(a.accounts ?? [])
-      setExpenses(e.expenses ?? [])
-    }).catch((error) => {
-      toast.error(error.message || "Failed to load dashboard data")
-    }).finally(() => setLoading(false))
-  }, [])
+  const loading = ticketsLoading || inventoryLoading || accountsLoading || expensesLoading
 
   const stats = useMemo(() => {
-    const active = tickets.filter((t) => t.status !== "completed" && t.status !== "cancelled").length
-    const ready = tickets.filter((t) => t.status === "ready_for_pickup").length
-    const repairing = tickets.filter((t) => t.status === "repairing").length
-    const awaitingParts = tickets.filter((t) => t.status === "awaiting_parts").length
-    const totalStock = inventory.reduce((s, i) => s + i.stockQty, 0)
-    const uniqueParts = inventory.length
-    const lowStock = inventory.filter((i) => {
-      const threshold = i.lowStockThreshold ?? 0
-      return i.stockQty <= threshold && i.stockQty > 0
+    const t = tickets ?? []
+    const i = inventory ?? []
+    const a = accounts ?? []
+    const e = expenses ?? []
+
+    const active = t.filter((t) => t.status !== "completed" && t.status !== "cancelled").length
+    const ready = t.filter((t) => t.status === "ready_for_pickup").length
+    const repairing = t.filter((t) => t.status === "repairing").length
+    const awaitingParts = t.filter((t) => t.status === "awaiting_parts").length
+    const totalStock = i.reduce((s, item) => s + item.stockQty, 0)
+    const uniqueParts = i.length
+    const lowStock = i.filter((item) => {
+      const threshold = item.lowStockThreshold ?? 0
+      return item.stockQty <= threshold && item.stockQty > 0
     }).length
-    const outOfStock = inventory.filter((i) => i.stockQty === 0).length
+    const outOfStock = i.filter((item) => item.stockQty === 0).length
 
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const monthExpensesTotal = expenses
-      .filter((e) => new Date(e.date) >= monthStart)
-      .reduce((s, e) => s + parseFloat(e.amount), 0)
-    const monthExpenseCount = expenses.filter((e) => new Date(e.date) >= monthStart).length
+    const monthExpensesTotal = e
+      .filter((ex) => new Date(ex.date) >= monthStart)
+      .reduce((s, ex) => s + parseFloat(ex.amount), 0)
+    const monthExpenseCount = e.filter((ex) => new Date(ex.date) >= monthStart).length
 
-    const totalBalance = accounts.reduce((s, a) => s + parseFloat(a.balance), 0)
+    const totalBalance = a.reduce((s, ac) => s + parseFloat(ac.balance), 0)
 
-    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses: monthExpensesTotal, monthExpenseCount, totalBalance }
+    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses: monthExpensesTotal, monthExpenseCount, totalBalance, totalTickets: t.length }
   }, [tickets, inventory, accounts, expenses])
 
-  const recentTickets = useMemo(() => {
-    return tickets.slice(0, 5)
-  }, [tickets])
+  const recentTickets = (tickets ?? []).slice(0, 5)
 
-  const lowStockItems = useMemo(() => {
-    return inventory
-      .filter((i) => {
-        const threshold = i.lowStockThreshold ?? 0
-        return i.stockQty <= threshold
-      })
-      .sort((a, b) => a.stockQty - b.stockQty)
-      .slice(0, 5)
-  }, [inventory])
+  const lowStockItems = (inventory ?? [])
+    .filter((i) => {
+      const threshold = i.lowStockThreshold ?? 0
+      return i.stockQty <= threshold
+    })
+    .sort((a, b) => a.stockQty - b.stockQty)
+    .slice(0, 5)
 
   if (loading) {
     return (
@@ -196,7 +152,7 @@ export default function DashboardOverview() {
                   <div className="text-2xl font-bold">
                     Rs. <AnimatedCounter to={stats.totalBalance} />
                   </div>
-                  <p className="text-xs text-muted-foreground">Across {accounts.length} accounts</p>
+                  <p className="text-xs text-muted-foreground">Across {accounts?.length ?? 0} accounts</p>
                 </CardContent>
               </Card>
             </HoverCard>
@@ -263,7 +219,7 @@ export default function DashboardOverview() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">
-                  <AnimatedCounter to={tickets.length} />
+                  <AnimatedCounter to={stats.totalTickets} />
                 </p>
               </CardContent>
             </Card>

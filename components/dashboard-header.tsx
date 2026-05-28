@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -94,40 +95,21 @@ export function DashboardHeader() {
   const { theme, setTheme } = useTheme()
   const crumbs = useBreadcrumbs(pathname)
   const [commandOpen, setCommandOpen] = useState(false)
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault()
-        setCommandOpen(true)
-      }
-    }
-    document.addEventListener("keydown", handler)
-    return () => document.removeEventListener("keydown", handler)
-  }, [])
+  const performSearch = (query: string) => {
+    setSearchQuery(query)
+  }
 
-  useEffect(() => {
-    if (commandOpen) {
-      setTimeout(() => searchInputRef.current?.focus(), 100)
-    }
-  }, [commandOpen])
-
-  const performSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([])
-      setSearchLoading(false)
-      return
-    }
-    setSearchLoading(true)
-    try {
+  const { data: searchData, isLoading: searchLoading } = useQuery({
+    queryKey: ["command-search", searchQuery],
+    queryFn: async () => {
       const [ticketsRes, customersRes, inventoryRes] = await Promise.all([
-        fetch(`/api/tickets?search=${encodeURIComponent(query)}&limit=4`).then((r) => r.json()),
-        fetch(`/api/customers?search=${encodeURIComponent(query)}&limit=3`).then((r) => r.json()),
-        fetch(`/api/inventory?search=${encodeURIComponent(query)}&limit=3`).then((r) => r.json()),
+        fetch(`/api/tickets?search=${encodeURIComponent(searchQuery)}&limit=4`).then((r) => r.json()),
+        fetch(`/api/customers?search=${encodeURIComponent(searchQuery)}&limit=3`).then((r) => r.json()),
+        fetch(`/api/inventory?search=${encodeURIComponent(searchQuery)}&limit=3`).then((r) => r.json()),
       ])
       const results: SearchResult[] = []
       ;(ticketsRes.tickets ?? []).forEach((t: { id: string; customerName?: string; brand?: string; model?: string }) =>
@@ -154,13 +136,29 @@ export function DashboardHeader() {
           type: "inventory",
         }),
       )
-      setSearchResults(results.slice(0, 10))
-    } catch {
-      setSearchResults([])
-    } finally {
-      setSearchLoading(false)
+      return results.slice(0, 10)
+    },
+    enabled: searchQuery.length > 0,
+  })
+
+  const results = searchData ?? []
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        setCommandOpen(true)
+      }
     }
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
   }, [])
+
+  useEffect(() => {
+    if (commandOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 100)
+    }
+  }, [commandOpen])
 
   function handleSearch(value: string) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -169,7 +167,7 @@ export function DashboardHeader() {
 
   function handleSelect(href: string) {
     setCommandOpen(false)
-    setSearchResults([])
+    setSearchQuery("")
     router.push(href)
   }
 
@@ -266,11 +264,11 @@ export function DashboardHeader() {
             </div>
           )}
 
-          {!searchLoading && searchResults.length > 0 && (
+          {!searchLoading && results.length > 0 && (
             <>
-              {searchResults.some((r) => r.type === "ticket") && (
+              {results.some((r) => r.type === "ticket") && (
                 <CommandGroup heading="Tickets">
-                  {searchResults
+                  {results
                     .filter((r) => r.type === "ticket")
                     .map((r) => (
                       <CommandItem key={r.id} value={r.id} onSelect={() => handleSelect(r.href)}>
@@ -280,9 +278,9 @@ export function DashboardHeader() {
                     ))}
                 </CommandGroup>
               )}
-              {searchResults.some((r) => r.type === "customer") && (
+              {results.some((r) => r.type === "customer") && (
                 <CommandGroup heading="Customers">
-                  {searchResults
+                  {results
                     .filter((r) => r.type === "customer")
                     .map((r) => (
                       <CommandItem key={r.id} value={r.id} onSelect={() => handleSelect(r.href)}>
@@ -292,9 +290,9 @@ export function DashboardHeader() {
                     ))}
                 </CommandGroup>
               )}
-              {searchResults.some((r) => r.type === "inventory") && (
+              {results.some((r) => r.type === "inventory") && (
                 <CommandGroup heading="Inventory">
-                  {searchResults
+                  {results
                     .filter((r) => r.type === "inventory")
                     .map((r) => (
                       <CommandItem key={r.id} value={r.id} onSelect={() => handleSelect(r.href)}>
@@ -307,7 +305,7 @@ export function DashboardHeader() {
             </>
           )}
 
-          {!searchLoading && searchResults.length === 0 && (
+          {!searchLoading && results.length === 0 && (
             <>
               <CommandGroup heading="Quick Navigation">
                 {navItems.map((item) => (

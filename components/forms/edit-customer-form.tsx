@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label"
 import { Loader2, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useCustomer } from "@/hooks/queries/use-customer"
+import { useUpdateCustomer } from "@/hooks/mutations/use-update-customer"
+import { useDeleteCustomer } from "@/hooks/mutations/use-delete-customer"
 
 interface EditCustomerFormProps {
   customerId: number
@@ -16,66 +19,57 @@ interface EditCustomerFormProps {
 
 export function EditCustomerForm({ customerId, onSuccess, onCancel }: EditCustomerFormProps) {
   const { confirm, dialog } = useConfirm()
-  const [loading, setLoading] = useState(true)
+  const { data: customer, isLoading } = useCustomer(customerId)
+  const updateCustomer = useUpdateCustomer()
+  const deleteCustomer = useDeleteCustomer()
+
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
 
   useEffect(() => {
-    fetch(`/api/customers/${customerId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found")
-        return res.json()
-      })
-      .then((data) => {
-        setName(data.customer.name)
-        setPhone(data.customer.phone)
-        setEmail(data.customer.email ?? "")
-      })
-      .catch(() => toast.error("Customer not found"))
-      .finally(() => setLoading(false))
-  }, [customerId])
+    if (customer) {
+      setName(customer.name)
+      setPhone(customer.phone)
+      setEmail(customer.email ?? "")
+    }
+  }, [customer])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
-    try {
-      const res = await fetch(`/api/customers/${customerId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email: email || null }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || "Failed to update customer")
-        setSaving(false)
-        return
+    updateCustomer.mutate(
+      { id: customerId, name, phone, email: email || null },
+      {
+        onSuccess: () => {
+          toast.success("Customer updated successfully")
+          onSuccess()
+        },
+        onError: () => {
+          toast.error("Failed to update customer")
+          setSaving(false)
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
       }
-
-      toast.success("Customer updated successfully")
-      onSuccess()
-    } catch {
-      toast.error("Failed to update customer")
-      setSaving(false)
-    }
+    )
   }
 
   const handleDelete = async () => {
     const ok = await confirm({ title: "Delete customer", description: `Delete customer "${name}"? This cannot be undone.`, variant: "destructive" })
     if (!ok) return
-    try {
-      const res = await fetch(`/api/customers/${customerId}`, { method: "DELETE" })
-      if (res.ok) {
+    deleteCustomer.mutate(customerId, {
+      onSuccess: () => {
         toast.success("Customer deleted successfully")
         onSuccess()
-      }
-    } catch {}
+      },
+    })
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
         <Loader2 className="h-5 w-5 mr-2 animate-spin" />

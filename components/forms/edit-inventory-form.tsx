@@ -8,6 +8,9 @@ import { Separator } from "@/components/ui/separator"
 import { Loader2, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useInventoryItem } from "@/hooks/queries/use-inventory-item"
+import { useUpdateInventoryItem } from "@/hooks/mutations/use-update-inventory-item"
+import { useDeleteInventoryItem } from "@/hooks/mutations/use-delete-inventory-item"
 
 interface EditInventoryFormProps {
   itemId: number
@@ -17,7 +20,10 @@ interface EditInventoryFormProps {
 
 export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventoryFormProps) {
   const { confirm, dialog } = useConfirm()
-  const [loading, setLoading] = useState(true)
+  const { data: item, isLoading } = useInventoryItem(itemId)
+  const updateInventoryItem = useUpdateInventoryItem()
+  const deleteInventoryItem = useDeleteInventoryItem()
+
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     partName: "",
@@ -30,70 +36,65 @@ export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventory
   })
 
   useEffect(() => {
-    fetch(`/api/inventory/${itemId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found")
-        return res.json()
+    if (item) {
+      setFormData({
+        partName: item.partName,
+        sku: item.sku,
+        compatibility: item.compatibility ?? "",
+        stockQty: String(item.stockQty),
+        lowStockThreshold: item.lowStockThreshold !== null ? String(item.lowStockThreshold) : "",
+        costPrice: item.costPrice ?? "",
+        sellingPrice: item.sellingPrice ?? "",
       })
-      .then((data) => {
-        const item = data.item
-        setFormData({
-          partName: item.partName,
-          sku: item.sku,
-          compatibility: item.compatibility ?? "",
-          stockQty: String(item.stockQty),
-          lowStockThreshold: item.lowStockThreshold !== null ? String(item.lowStockThreshold) : "",
-          costPrice: item.costPrice ?? "",
-          sellingPrice: item.sellingPrice ?? "",
-        })
-      })
-      .catch(() => toast.error("Failed to load part"))
-      .finally(() => setLoading(false))
-  }, [itemId])
+    }
+  }, [item])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
-    try {
-      const res = await fetch(`/api/inventory/${itemId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || "Failed to update part")
-        setSaving(false)
-        return
+    updateInventoryItem.mutate(
+      {
+        id: itemId,
+        partName: formData.partName,
+        compatibility: formData.compatibility || null,
+        stockQty: formData.stockQty ? Number(formData.stockQty) : undefined,
+        lowStockThreshold: formData.lowStockThreshold ? Number(formData.lowStockThreshold) : null,
+        costPrice: formData.costPrice ? Number(formData.costPrice) : null,
+        sellingPrice: formData.sellingPrice ? Number(formData.sellingPrice) : null,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Inventory item updated successfully")
+          onSuccess()
+        },
+        onError: () => {
+          toast.error("Failed to update inventory item")
+          setSaving(false)
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
       }
-
-      toast.success("Inventory item updated successfully")
-      onSuccess()
-    } catch {
-      toast.error("Failed to update inventory item")
-      setSaving(false)
-    }
+    )
   }
 
   const handleDelete = async () => {
     const ok = await confirm({ title: "Delete part", description: `Delete "${formData.partName}"? This cannot be undone.`, variant: "destructive" })
     if (!ok) return
-    try {
-      const res = await fetch(`/api/inventory/${itemId}`, { method: "DELETE" })
-      if (res.ok) {
+    deleteInventoryItem.mutate(itemId, {
+      onSuccess: () => {
         toast.success("Item deleted successfully")
         onSuccess()
-      }
-    } catch {}
+      },
+    })
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
         <Loader2 className="h-5 w-5 mr-2 animate-spin" />

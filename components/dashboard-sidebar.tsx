@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
+import { useSettings } from "@/hooks/queries/use-settings"
 import {
   LayoutDashboard,
   ClipboardList,
@@ -43,16 +44,8 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
   const pathname = usePathname()
   const { user } = useAuth()
-  const [shopName, setShopName] = useState("Mobile Repair Lab")
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.settings?.shopName) setShopName(data.settings.shopName)
-      })
-      .catch(() => {})
-  }, [])
+  const { data: settings } = useSettings()
+  const shopName = settings?.shopName ?? "Mobile Repair Lab"
 
   return (
     <div className="flex h-full flex-col gap-4 py-4">

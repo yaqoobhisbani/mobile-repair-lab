@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useAccount } from "@/hooks/queries/use-account"
+import { useUpdateAccount } from "@/hooks/mutations/use-update-account"
+import { useDeleteAccount } from "@/hooks/mutations/use-delete-account"
 
 interface EditAccountFormProps {
   accountId: number
@@ -17,68 +20,57 @@ interface EditAccountFormProps {
 
 export function EditAccountForm({ accountId, onSuccess, onCancel }: EditAccountFormProps) {
   const { confirm, dialog } = useConfirm()
-  const [loading, setLoading] = useState(true)
+  const { data: account, isLoading } = useAccount(accountId)
+  const updateAccount = useUpdateAccount()
+  const deleteAccount = useDeleteAccount()
+
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState("")
   const [type, setType] = useState("")
   const [description, setDescription] = useState("")
 
   useEffect(() => {
-    fetch(`/api/accounts/${accountId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found")
-        return res.json()
-      })
-      .then((data) => {
-        setName(data.account.name)
-        setType(data.account.type)
-        setDescription(data.account.description ?? "")
-      })
-      .catch(() => toast.error("Failed to load account"))
-      .finally(() => setLoading(false))
-  }, [accountId])
+    if (account) {
+      setName(account.name)
+      setType(account.type)
+      setDescription(account.description ?? "")
+    }
+  }, [account])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
-    try {
-      const res = await fetch(`/api/accounts/${accountId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          type,
-          description: description || null,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || "Failed to update account")
-        setSaving(false)
-        return
+    updateAccount.mutate(
+      { id: accountId, name, type: type as "bank" | "cash", description: description || null },
+      {
+        onSuccess: () => {
+          toast.success("Account updated successfully")
+          onSuccess()
+        },
+        onError: () => {
+          toast.error("Failed to update account")
+          setSaving(false)
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
       }
-      toast.success("Account updated successfully")
-      onSuccess()
-    } catch {
-      toast.error("Failed to update account")
-      setSaving(false)
-    }
+    )
   }
 
   const handleDelete = async () => {
     const ok = await confirm({ title: "Delete account", description: "Delete this account? This cannot be undone.", variant: "destructive" })
     if (!ok) return
-    try {
-      const res = await fetch(`/api/accounts/${accountId}`, { method: "DELETE" })
-      if (res.ok) {
+    deleteAccount.mutate(accountId, {
+      onSuccess: () => {
         toast.success("Account deleted successfully")
         onSuccess()
-      }
-    } catch {}
+      },
+    })
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
         <Loader2 className="h-5 w-5 mr-2 animate-spin" />

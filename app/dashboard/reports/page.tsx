@@ -1,31 +1,16 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TrendingUp, Wrench, PackageCheck, CheckCircle2 } from "lucide-react"
-import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts"
 import { DatePicker } from "@/components/date-picker"
 import { MonthPicker } from "@/components/month-picker"
-
-interface ProfitEntry {
-  period: string
-  partsProfit: number
-  laborProfit: number
-  totalProfit: number
-  ticketCount: number
-}
-
-interface Summary {
-  totalPartsProfit: number
-  totalLaborProfit: number
-  totalProfit: number
-  totalTickets: number
-}
+import { useProfitReport } from "@/hooks/queries/use-profit-report"
 
 function formatPeriod(dateStr: string, period: string) {
   const d = new Date(dateStr)
@@ -41,9 +26,6 @@ function formatCurrency(n: number) {
 export default function ReportsPage() {
   const [datePeriod, setDatePeriod] = useState("monthly")
   const [referenceDate, setReferenceDate] = useState(new Date())
-  const [data, setData] = useState<ProfitEntry[]>([])
-  const [summary, setSummary] = useState<Summary | null>(null)
-  const [loading, setLoading] = useState(true)
 
   const getDateRange = useCallback(() => {
     const now = referenceDate
@@ -65,38 +47,26 @@ export default function ReportsPage() {
     }
   }, [datePeriod, referenceDate])
 
-  const buildUrl = useCallback(() => {
+  const params = useMemo(() => {
     const range = getDateRange()
     const apiPeriod = datePeriod === "all" ? "yearly" : datePeriod
-    const params = new URLSearchParams({ period: apiPeriod })
+    const p: Record<string, string> = { period: apiPeriod }
     if (range) {
-      params.set("from", range.from)
-      params.set("to", range.to)
+      p.from = range.from
+      p.to = range.to
     }
-    return `/api/reports/profit?${params.toString()}`
+    return p
   }, [getDateRange, datePeriod])
 
-  useEffect(() => {
-    setLoading(true)
-    fetch(buildUrl())
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch")
-        return res.json()
-      })
-      .then((result) => {
-        setData(result.data ?? [])
-        setSummary(result.summary ?? null)
-      })
-      .catch(() => toast.error("Failed to load profit report"))
-      .finally(() => setLoading(false))
-  }, [buildUrl])
+  const { data, isLoading } = useProfitReport(params)
 
   const chartData = useMemo(() => {
-    return [...data].reverse().map((d) => ({
-      label: formatPeriod(d.period, datePeriod),
-      "Parts Profit": d.partsProfit,
-      "Labor Profit": d.laborProfit,
-      total: d.totalProfit,
+    const d = data?.data ?? []
+    return [...d].reverse().map((entry) => ({
+      label: formatPeriod(entry.period, datePeriod),
+      "Parts Profit": entry.partsProfit,
+      "Labor Profit": entry.laborProfit,
+      total: entry.totalProfit,
     }))
   }, [data, datePeriod])
 
@@ -154,7 +124,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Skeleton className="h-24 w-full rounded-xl" />
@@ -175,7 +145,7 @@ export default function ReportsPage() {
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-emerald-600">{formatCurrency(summary?.totalProfit ?? 0)}</p>
+                    <p className="text-2xl font-bold text-emerald-600">{formatCurrency(data?.summary?.totalProfit ?? 0)}</p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -184,24 +154,11 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Labor / Service Fee</CardTitle>
-                    <Wrench className="h-4 w-4 text-blue-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary?.totalLaborProfit ?? 0)}</p>
-                  </CardContent>
-                </Card>
-              </HoverCard>
-            </StaggerItem>
-            <StaggerItem>
-              <HoverCard>
-                <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Parts Profit</CardTitle>
-                    <PackageCheck className="h-4 w-4 text-amber-500" />
+                    <PackageCheck className="h-4 w-4 text-blue-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-amber-600">{formatCurrency(summary?.totalPartsProfit ?? 0)}</p>
+                    <p className="text-2xl font-bold">{formatCurrency(data?.summary?.totalPartsProfit ?? 0)}</p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -210,11 +167,24 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Completed Tickets</CardTitle>
-                    <CheckCircle2 className="h-4 w-4 text-violet-500" />
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Labor Profit</CardTitle>
+                    <Wrench className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold"><AnimatedCounter to={summary?.totalTickets ?? 0} /></p>
+                    <p className="text-2xl font-bold">{formatCurrency(data?.summary?.totalLaborProfit ?? 0)}</p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
+                <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Tickets Completed</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-amber-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold"><AnimatedCounter to={data?.summary?.totalTickets ?? 0} /></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -223,66 +193,31 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Profit Trend</CardTitle>
-              <CardDescription>Parts profit vs labor profit over time.</CardDescription>
+              <CardTitle>Profit Breakdown</CardTitle>
+              <CardDescription>
+                {datePeriod === "daily" ? "Daily" : datePeriod === "monthly" ? "Monthly" : "Yearly"} profit from parts and labor.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {chartData.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground">
-                  No completed tickets with labor cost yet. Complete some tickets to see profit data.
+                <div className="flex items-center justify-center h-[300px] text-sm text-muted-foreground">
+                  No completed tickets with labor cost data found in this period.
                 </div>
               ) : (
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                      <XAxis dataKey="label" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `Rs.${v}`} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                      <Bar dataKey="Parts Profit" fill="#d97706" radius={[4, 4, 0, 0]} stackId="profit" />
-                      <Bar dataKey="Labor Profit" fill="#2563eb" radius={[4, 4, 0, 0]} stackId="profit" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Bar dataKey="Parts Profit" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Labor Profit" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </CardContent>
           </Card>
-
-          {data.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Breakdown</CardTitle>
-                <CardDescription>Detailed profit data by {datePeriod === "daily" ? "day" : datePeriod === "monthly" ? "month" : "year"}.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-left">Period</th>
-                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Parts Profit</th>
-                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Labor Profit</th>
-                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Total Profit</th>
-                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Tickets</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.map((row) => (
-                        <tr key={row.period} className="border-b last:border-0">
-                          <td className="py-3 font-medium">{formatPeriod(row.period, datePeriod)}</td>
-                          <td className="py-3 text-right text-amber-600">{formatCurrency(row.partsProfit)}</td>
-                          <td className="py-3 text-right text-blue-600">{formatCurrency(row.laborProfit)}</td>
-                          <td className="py-3 text-right font-medium text-emerald-600">{formatCurrency(row.totalProfit)}</td>
-                          <td className="py-3 text-right">{row.ticketCount}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </>
       )}
     </div>

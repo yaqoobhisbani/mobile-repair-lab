@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
+import { useCreateCustomer } from "@/hooks/mutations/use-create-customer"
 
 interface CreateCustomerFormProps {
   onSuccess: () => void
@@ -13,35 +14,32 @@ interface CreateCustomerFormProps {
 }
 
 export function CreateCustomerForm({ onSuccess, onCancel }: CreateCustomerFormProps) {
+  const createCustomer = useCreateCustomer()
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
-    try {
-      const res = await fetch("/api/customers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email: email || undefined }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || "Failed to create customer")
-        setSaving(false)
-        return
+    createCustomer.mutate(
+      { name, phone, email: email || undefined },
+      {
+        onSuccess: () => {
+          toast.success("Customer created successfully")
+          onSuccess()
+        },
+        onError: () => {
+          toast.error("Failed to create customer")
+          setSaving(false)
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
       }
-
-      toast.success("Customer created successfully")
-      onSuccess()
-    } catch {
-      toast.error("Failed to create customer")
-      setSaving(false)
-    }
+    )
   }
 
   return (

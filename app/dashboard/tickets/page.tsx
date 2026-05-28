@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,50 +19,22 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { SlideOver } from "@/components/slide-over"
 import { CreateTicketForm } from "@/components/forms/create-ticket-form"
 import { capitalize } from "@/lib/utils"
-
-interface Ticket {
-  id: string
-  customerName: string | null
-  brand: string
-  model: string
-  status: string
-  createdAt: string
-}
+import { useTickets } from "@/hooks/queries/use-tickets"
+import { useDeleteTicket } from "@/hooks/mutations/use-delete-ticket"
 
 export default function TicketsPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [error, setError] = useState("")
   const { confirm, dialog } = useConfirm()
   const [slideOverOpen, setSlideOverOpen] = useState(false)
   const [pageSize, setPageSize] = useState(10)
   const [page, setPage] = useState(1)
 
+  const { data: tickets = [], isLoading } = useTickets()
+  const deleteTicketMutation = useDeleteTicket()
+
   const openSlide = useCallback(() => setSlideOverOpen(true), [])
   const closeSlide = useCallback(() => setSlideOverOpen(false), [])
-
-  const refreshTickets = useCallback(async () => {
-    await fetch("/api/tickets")
-      .then((res) => res.json())
-      .then((data) => setTickets(data.tickets ?? []))
-  }, [])
-
-  useEffect(() => {
-    if (error) toast.error(error)
-  }, [error])
-
-  useEffect(() => {
-    fetch("/api/tickets")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch")
-        return res.json()
-      })
-      .then((data) => setTickets(data.tickets ?? []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -101,13 +73,10 @@ export default function TicketsPage() {
 
   const deleteTicket = async (id: string) => {
     const ok = await confirm({ title: "Delete Ticket", description: "Delete this ticket? This action cannot be undone.", variant: "destructive" }); if (!ok) return
-    try {
-      const res = await fetch(`/api/tickets/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        setTickets((prev) => prev.filter((t) => t.id !== id))
-        toast.success("Ticket deleted successfully")
-      }
-    } catch {}
+    deleteTicketMutation.mutate(id, {
+      onSuccess: () => toast.success("Ticket deleted successfully"),
+      onError: () => toast.error("Failed to delete ticket"),
+    })
   }
 
   function formatDate(d: string | null) {
@@ -120,7 +89,7 @@ export default function TicketsPage() {
       <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          {loading ? (
+          {isLoading ? (
             <>
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-4 w-64 mt-2" />
@@ -138,7 +107,7 @@ export default function TicketsPage() {
           </Button>
       </div>
 
-      {!loading && (
+      {!isLoading && (
         <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StaggerItem>
             <HoverCard>
@@ -248,7 +217,7 @@ export default function TicketsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -336,7 +305,7 @@ export default function TicketsPage() {
         description="Create a new repair ticket."
         gradient="tickets"
       >
-        <CreateTicketForm onSuccess={() => { closeSlide(); refreshTickets() }} onCancel={closeSlide} />
+        <CreateTicketForm onSuccess={() => { closeSlide() }} onCancel={closeSlide} />
       </SlideOver>
     </PageTransition>
   )

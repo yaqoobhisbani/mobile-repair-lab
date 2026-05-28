@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Check, Loader2, Plus, Search, X } from "lucide-react"
 import { toast } from "sonner"
+import { useCustomers } from "@/hooks/queries/use-customers"
+import { useCreateCustomer } from "@/hooks/mutations/use-create-customer"
+import { useCreateTicket } from "@/hooks/mutations/use-create-ticket"
 
 interface Customer {
   id: number
@@ -21,9 +24,11 @@ interface CreateTicketFormProps {
 }
 
 export function CreateTicketForm({ onSuccess, onCancel }: CreateTicketFormProps) {
+  const { data: customers = [], isLoading: customersLoading } = useCustomers()
+  const createCustomer = useCreateCustomer()
+  const createTicket = useCreateTicket()
+
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing")
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [customersLoading, setCustomersLoading] = useState(true)
   const [customerSearch, setCustomerSearch] = useState("")
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
@@ -45,14 +50,6 @@ export function CreateTicketForm({ onSuccess, onCancel }: CreateTicketFormProps)
   useEffect(() => {
     if (error) toast.error(error)
   }, [error])
-
-  useEffect(() => {
-    fetch("/api/customers")
-      .then((res) => res.json())
-      .then((data) => setCustomers(data.customers))
-      .catch(() => {})
-      .finally(() => setCustomersLoading(false))
-  }, [])
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -111,18 +108,8 @@ export function CreateTicketForm({ onSuccess, onCancel }: CreateTicketFormProps)
         return
       }
       try {
-        const res = await fetch("/api/customers", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: newName, phone: newPhone, email: newEmail || undefined }),
-        })
-        const data = await res.json()
-        if (!res.ok) {
-          setError(data.error || "Failed to create customer")
-          setSaving(false)
-          return
-        }
-        customerId = data.customer.id
+        const result = await createCustomer.mutateAsync({ name: newName, phone: newPhone, email: newEmail || undefined })
+        customerId = result.customer.id
       } catch {
         setError("Failed to create customer")
         setSaving(false)
@@ -141,17 +128,7 @@ export function CreateTicketForm({ onSuccess, onCancel }: CreateTicketFormProps)
     }
 
     try {
-      const res = await fetch("/api/tickets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || "Failed to create ticket")
-        setSaving(false)
-        return
-      }
+      await createTicket.mutateAsync(payload)
       toast.success("Ticket created successfully")
       onSuccess()
     } catch {

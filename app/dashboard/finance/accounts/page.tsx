@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,9 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { SlideOver } from "@/components/slide-over"
 import { CreateAccountForm } from "@/components/forms/create-account-form"
 import { EditAccountForm } from "@/components/forms/edit-account-form"
+import { useAccounts } from "@/hooks/queries/use-accounts"
+import { useDeleteAccount } from "@/hooks/mutations/use-delete-account"
+import { useTopUpAccount } from "@/hooks/mutations/use-top-up-account"
 
 interface Account {
   id: number
@@ -34,8 +37,6 @@ const typeLabels: Record<string, string> = {
 
 export default function AccountsPage() {
   const { confirm, dialog } = useConfirm()
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
@@ -45,22 +46,14 @@ export default function AccountsPage() {
   const [topUpAccountId, setTopUpAccountId] = useState<number | null>(null)
   const [topUpAmount, setTopUpAmount] = useState("")
   const [topUpDescription, setTopUpDescription] = useState("")
-  const [topingUp, setTopingUp] = useState(false)
+
+  const { data: accounts = [], isLoading } = useAccounts()
+  const deleteAccountMutation = useDeleteAccount()
+  const topUpMutation = useTopUpAccount()
 
   function openCreateSlide() { setEditAccountId(null); setSlideOverOpen(true) }
   function openEditSlide(id: number) { setEditAccountId(id); setSlideOverOpen(true) }
   function closeSlide() { setSlideOverOpen(false); setEditAccountId(null) }
-
-  useEffect(() => {
-    fetch("/api/accounts")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch")
-        return res.json()
-      })
-      .then((data) => setAccounts(data.accounts ?? []))
-      .catch(() => toast.error("Failed to load accounts"))
-      .finally(() => setLoading(false))
-  }, [])
 
   const stats = useMemo(() => {
     const totalBalance = accounts.reduce((s, a) => s + parseFloat(a.balance), 0)
@@ -86,35 +79,30 @@ export default function AccountsPage() {
 
   const deleteAccount = async (id: number, name: string) => {
     const ok = await confirm({ title: "Delete account", description: `Delete "${name}"? This cannot be undone.`, variant: "destructive" }); if (!ok) return
-    try {
-      const res = await fetch(`/api/accounts/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        setAccounts((prev) => prev.filter((a) => a.id !== id))
-        toast.success("Account deleted successfully")
-      }
-    } catch {}
+    deleteAccountMutation.mutate(id, {
+      onSuccess: () => toast.success("Account deleted successfully"),
+      onError: () => toast.error("Failed to delete account"),
+    })
   }
 
   const openTopUp = (id: number) => { setTopUpAccountId(id); setTopUpAmount(""); setTopUpDescription(""); setTopUpOpen(true) }
 
-  const handleTopUp = async () => {
+  const handleTopUp = () => {
     const amount = parseFloat(topUpAmount)
     if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return }
     if (!topUpAccountId) return
-    setTopingUp(true)
-    try {
-      const res = await fetch(`/api/accounts/${topUpAccountId}/topup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, description: topUpDescription }),
-      })
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed to top up") }
-      setAccounts((prev) => prev.map((a) => a.id === topUpAccountId ? { ...a, balance: String(parseFloat(a.balance) + amount) } : a))
-      toast.success("Account topped up successfully")
-      setTopUpOpen(false)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to top up")
-    } finally { setTopingUp(false) }
+    topUpMutation.mutate(
+      { id: topUpAccountId, amount, description: topUpDescription || undefined },
+      {
+        onSuccess: () => {
+          toast.success("Account topped up successfully")
+          setTopUpOpen(false)
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to top up")
+        },
+      }
+    )
   }
 
   return (
@@ -131,7 +119,7 @@ export default function AccountsPage() {
         </Button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />
@@ -217,7 +205,7 @@ export default function AccountsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -324,9 +312,9 @@ export default function AccountsPage() {
         gradient="accounts"
       >
         {editAccountId ? (
-          <EditAccountForm accountId={editAccountId} onSuccess={() => { closeSlide(); fetch("/api/accounts").then(r => r.json()).then(d => setAccounts(d.accounts ?? [])).catch(() => toast.error("Failed to refresh accounts")) }} onCancel={closeSlide} />
+          <EditAccountForm accountId={editAccountId} onSuccess={() => { closeSlide() }} onCancel={closeSlide} />
         ) : (
-          <CreateAccountForm onSuccess={() => { closeSlide(); fetch("/api/accounts").then(r => r.json()).then(d => setAccounts(d.accounts ?? [])).catch(() => toast.error("Failed to refresh accounts")) }} onCancel={closeSlide} />
+          <CreateAccountForm onSuccess={() => { closeSlide() }} onCancel={closeSlide} />
         )}
       </SlideOver>
 
@@ -358,9 +346,9 @@ export default function AccountsPage() {
             />
           </div>
           <div className="flex items-center gap-2 pt-2">
-            <Button variant="outline" onClick={() => setTopUpOpen(false)} disabled={topingUp} className="flex-1">Cancel</Button>
-            <Button onClick={handleTopUp} disabled={topingUp} className="flex-1">
-              {topingUp ? "Topping up..." : "Top Up"}
+            <Button variant="outline" onClick={() => setTopUpOpen(false)} disabled={topUpMutation.isPending} className="flex-1">Cancel</Button>
+            <Button onClick={handleTopUp} disabled={topUpMutation.isPending} className="flex-1">
+              {topUpMutation.isPending ? "Topping up..." : "Top Up"}
             </Button>
           </div>
         </div>

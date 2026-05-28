@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
+import { useCreateInventoryItem } from "@/hooks/mutations/use-create-inventory-item"
 
 interface CreateInventoryFormProps {
   onSuccess: () => void
@@ -14,6 +15,7 @@ interface CreateInventoryFormProps {
 }
 
 export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryFormProps) {
+  const createInventoryItem = useCreateInventoryItem()
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     partName: "",
@@ -29,31 +31,34 @@ export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryForm
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
-    try {
-      const res = await fetch("/api/inventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        toast.error(data.error || "Failed to create part")
-        setSaving(false)
-        return
+    createInventoryItem.mutate(
+      {
+        partName: formData.partName,
+        sku: formData.sku,
+        compatibility: formData.compatibility || undefined,
+        stockQty: formData.stockQty ? Number(formData.stockQty) : undefined,
+        lowStockThreshold: formData.lowStockThreshold ? Number(formData.lowStockThreshold) : undefined,
+        costPrice: formData.costPrice ? Number(formData.costPrice) : undefined,
+        sellingPrice: formData.sellingPrice ? Number(formData.sellingPrice) : undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Inventory item created successfully")
+          onSuccess()
+        },
+        onError: () => {
+          toast.error("Failed to create inventory item")
+          setSaving(false)
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
       }
-
-      toast.success("Inventory item created successfully")
-      onSuccess()
-    } catch {
-      toast.error("Failed to create inventory item")
-      setSaving(false)
-    }
+    )
   }
 
   return (

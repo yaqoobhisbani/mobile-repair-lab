@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Search, Loader2, Plus } from "lucide-react"
+import { useInventory } from "@/hooks/queries/use-inventory"
+import { useAddPart } from "@/hooks/mutations/use-add-part"
 
 interface InventoryPart {
   id: number
@@ -30,27 +32,14 @@ interface AddPartDialogProps {
 }
 
 export function AddPartDialog({ open, onOpenChange, ticketId, onPartAdded }: AddPartDialogProps) {
-  const [parts, setParts] = useState<InventoryPart[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: parts = [], isLoading } = useInventory()
+  const addPart = useAddPart()
+
   const [search, setSearch] = useState("")
   const [selectedPart, setSelectedPart] = useState<InventoryPart | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState("")
-
-  useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    setSearch("")
-    setSelectedPart(null)
-    setQuantity(1)
-    setError("")
-    fetch("/api/inventory")
-      .then((res) => res.json())
-      .then((data) => setParts(data.items))
-      .catch(() => setError("Failed to load inventory"))
-      .finally(() => setLoading(false))
-  }, [open])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -62,39 +51,46 @@ export function AddPartDialog({ open, onOpenChange, ticketId, onPartAdded }: Add
     )
   }, [search, parts])
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     if (!selectedPart) return
     setAdding(true)
     setError("")
-    try {
-      const res = await fetch(`/api/tickets/${ticketId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inventoryId: selectedPart.id, quantityUsed: quantity }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || "Failed to add part")
-        setAdding(false)
-        return
+
+    addPart.mutate(
+      { ticketId, inventoryId: selectedPart.id, quantityUsed: quantity },
+      {
+        onSuccess: () => {
+          onPartAdded()
+          onOpenChange(false)
+        },
+        onError: () => {
+          setError("Failed to add part")
+          setAdding(false)
+        },
+        onSettled: () => {
+          setAdding(false)
+        },
       }
-      onPartAdded()
-      onOpenChange(false)
-    } catch {
-      setError("Failed to add part")
-    }
-    setAdding(false)
+    )
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => {
+      if (!o) {
+        setSearch("")
+        setSelectedPart(null)
+        setQuantity(1)
+        setError("")
+      }
+      onOpenChange(o)
+    }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add Part</DialogTitle>
           <DialogDescription>Select a part from inventory to add to this ticket.</DialogDescription>
         </DialogHeader>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
             Loading inventory...

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
+import { useCreateAccount } from "@/hooks/mutations/use-create-account"
 
 interface CreateAccountFormProps {
   onSuccess: () => void
@@ -14,39 +15,38 @@ interface CreateAccountFormProps {
 }
 
 export function CreateAccountForm({ onSuccess, onCancel }: CreateAccountFormProps) {
+  const createAccount = useCreateAccount()
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState("")
   const [type, setType] = useState("")
   const [balance, setBalance] = useState("")
   const [description, setDescription] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
-    try {
-      const res = await fetch("/api/accounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          type,
-          balance: balance || undefined,
-          description: description || undefined,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || "Failed to create account")
-        setSaving(false)
-        return
+    createAccount.mutate(
+      {
+        name,
+        type: type as "bank" | "cash",
+        balance: balance ? Number(balance) : undefined,
+        description: description || undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Account created successfully")
+          onSuccess()
+        },
+        onError: () => {
+          toast.error("Failed to create account")
+          setSaving(false)
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
       }
-      toast.success("Account created successfully")
-      onSuccess()
-    } catch {
-      toast.error("Failed to create account")
-      setSaving(false)
-    }
+    )
   }
 
   return (

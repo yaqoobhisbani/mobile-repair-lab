@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,17 +19,8 @@ import { CreateExpenseForm } from "@/components/forms/create-expense-form"
 import { DatePicker } from "@/components/date-picker"
 import { MonthPicker } from "@/components/month-picker"
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns"
-
-interface Expense {
-  id: number
-  description: string
-  amount: string
-  category: string | null
-  accountId: number
-  accountName: string | null
-  date: string
-  createdAt: string
-}
+import { useExpenses } from "@/hooks/queries/use-expenses"
+import { useDeleteExpense } from "@/hooks/mutations/use-delete-expense"
 
 export default function ExpensesPage() {
   const { confirm, dialog } = useConfirm()
@@ -38,8 +29,6 @@ export default function ExpensesPage() {
     return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
   }
 
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [page, setPage] = useState(1)
@@ -48,16 +37,8 @@ export default function ExpensesPage() {
   const [datePeriod, setDatePeriod] = useState("monthly")
   const [referenceDate, setReferenceDate] = useState<Date>(new Date())
 
-  useEffect(() => {
-    fetch("/api/expenses")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch")
-        return res.json()
-      })
-      .then((data) => setExpenses(data.expenses ?? []))
-      .catch(() => toast.error("Failed to load expenses"))
-      .finally(() => setLoading(false))
-  }, [])
+  const { data: expenses = [], isLoading } = useExpenses()
+  const deleteExpenseMutation = useDeleteExpense()
 
   const categories = useMemo(() => {
     const set = new Set<string>()
@@ -144,13 +125,10 @@ export default function ExpensesPage() {
 
   const deleteExpense = async (id: number, description: string) => {
     const ok = await confirm({ title: "Delete expense", description: `Delete expense "${description}"? Amount will be restored to the account.`, variant: "destructive" }); if (!ok) return
-    try {
-      const res = await fetch(`/api/expenses/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        setExpenses((prev) => prev.filter((e) => e.id !== id))
-        toast.success("Expense deleted successfully")
-      }
-    } catch {}
+    deleteExpenseMutation.mutate(id, {
+      onSuccess: () => toast.success("Expense deleted successfully"),
+      onError: () => toast.error("Failed to delete expense"),
+    })
   }
 
   return (
@@ -167,7 +145,7 @@ export default function ExpensesPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {loading ? (
+        {isLoading ? (
           <>
             <Card>
               <CardHeader className="pb-2">
@@ -330,7 +308,7 @@ export default function ExpensesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-10 w-full" />
               {Array.from({ length: 5 }).map((_, i) => (
@@ -417,7 +395,7 @@ export default function ExpensesPage() {
         description="Log a business expense."
         gradient="expenses"
       >
-        <CreateExpenseForm onSuccess={() => { setSlideOverOpen(false); fetch("/api/expenses").then(r => r.json()).then(d => setExpenses(d.expenses ?? [])).catch(() => toast.error("Failed to refresh expenses")) }} onCancel={() => setSlideOverOpen(false)} />
+        <CreateExpenseForm onSuccess={() => { setSlideOverOpen(false) }} onCancel={() => setSlideOverOpen(false)} />
       </SlideOver>
     </PageTransition>
   )

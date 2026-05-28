@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, use, useMemo } from "react"
+import { useState, use, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,33 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Landmark, ArrowUpRight, ArrowDownRight, ExternalLink } from "lucide-react"
-import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { PageTransition } from "@/components/page-transition"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { DatePicker } from "@/components/date-picker"
 import { MonthPicker } from "@/components/month-picker"
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns"
-
-interface Transaction {
-  id: number
-  accountId: number
-  type: "credit" | "debit"
-  amount: string
-  description: string
-  referenceType: "ticket" | "expense" | "opening_balance" | "top_up"
-  referenceId: string | null
-  createdAt: string
-}
-
-interface Account {
-  id: number
-  name: string
-  type: "bank" | "cash"
-  balance: string
-  description: string | null
-  createdAt: string
-}
+import { useAccount } from "@/hooks/queries/use-account"
+import { useTransactions } from "@/hooks/queries/use-transactions"
 
 const typeLabels: Record<string, string> = {
   bank: "Bank Account",
@@ -50,27 +31,14 @@ const referenceLinks: Record<string, string> = {
 export default function ViewAccountPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const [account, setAccount] = useState<Account | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
   const [datePeriod, setDatePeriod] = useState("all")
   const [referenceDate, setReferenceDate] = useState(new Date())
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/accounts").then((r) => r.json()),
-      fetch(`/api/accounts/${id}/transactions`).then((r) => r.json()),
-    ])
-      .then(([accountsData, txData]) => {
-        const acc = accountsData.accounts?.find((a: Account) => String(a.id) === id)
-        setAccount(acc || txData.account)
-        setTransactions(txData.transactions ?? [])
-      })
-      .catch(() => toast.error("Failed to load account"))
-      .finally(() => setLoading(false))
-  }, [id])
+  const { data: account, isLoading: loadingAccount } = useAccount(Number(id))
+  const { data: transactions = [], isLoading: loadingTx } = useTransactions(Number(id))
+  const loading = loadingAccount || loadingTx
 
   const getDateRange = useMemo(() => {
     const ref = referenceDate

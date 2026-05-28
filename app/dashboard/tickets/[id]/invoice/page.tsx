@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { use } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,40 +8,13 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Loader2, Printer } from "lucide-react"
 import { capitalize } from "@/lib/utils"
-
-interface TicketData {
-  id: string
-  customerName: string | null
-  customerPhone: string | null
-  customerEmail: string | null
-  brand: string
-  model: string
-  paymentStatus: string
-  paymentAccountName: string | null
-  paymentAccountType: string | null
-  laborCost: string | null
-  createdAt: string
-}
-
-interface ShopSettings {
-  shopName: string
-  shopAddress: string
-  shopPhone: string
-  currency: string
-}
+import { useTicket } from "@/hooks/queries/use-ticket"
+import { useSettings } from "@/hooks/queries/use-settings"
 
 const paymentBadgeVariant: Record<string, "secondary" | "default" | "outline"> = {
   unpaid: "secondary",
   partially_paid: "outline",
   paid: "default",
-}
-
-interface TicketItem {
-  id: number
-  partName: string | null
-  sku: string | null
-  quantityUsed: number
-  sellingPrice: string | null
 }
 
 function formatDate(d: string) {
@@ -58,26 +30,10 @@ const currencySymbols: Record<string, string> = {
 
 export default function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [ticket, setTicket] = useState<TicketData | null>(null)
-  const [items, setItems] = useState<TicketItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [settings, setSettings] = useState<ShopSettings | null>(null)
+  const { data: ticketData, isLoading: ticketLoading } = useTicket(id)
+  const { data: settings } = useSettings()
 
-  useEffect(() => {
-    Promise.all([
-      fetch(`/api/tickets/${id}`).then((r) => r.json()),
-      fetch("/api/settings").then((r) => r.json()),
-    ])
-      .then(([ticketData, settingsData]) => {
-        setTicket(ticketData.ticket)
-        setItems(ticketData.items)
-        setSettings(settingsData.settings)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [id])
-
-  if (loading) {
+  if (ticketLoading) {
     return (
       <div className="flex items-center justify-center py-24 text-muted-foreground">
         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -86,7 +42,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
     )
   }
 
-  if (!ticket) {
+  if (!ticketData?.ticket) {
     return (
       <div className="text-center py-24 text-muted-foreground">
         Ticket not found.
@@ -94,6 +50,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
     )
   }
 
+  const { ticket, items } = ticketData
   const s = settings ?? { shopName: "Mobile Repair Lab", shopAddress: "123 Repair Street, City, State 12345", shopPhone: "(555) 987-6543", currency: "PKR" }
   const sym = currencySymbols[s.currency] ?? "Rs."
 

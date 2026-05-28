@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { use } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,10 @@ import { capitalize } from "@/lib/utils"
 import { toast } from "sonner"
 import { useConfirm } from "@/hooks/use-confirm"
 import { cn } from "@/lib/utils"
+import { useTicket } from "@/hooks/queries/use-ticket"
+import { useAccounts } from "@/hooks/queries/use-accounts"
+import { useUpdateTicket } from "@/hooks/mutations/use-update-ticket"
+import { useRemovePart } from "@/hooks/mutations/use-remove-part"
 
 interface TicketData {
   id: string
@@ -83,11 +87,11 @@ function formatDate(d: string | null) {
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [ticket, setTicket] = useState<TicketData | null>(null)
-  const [items, setItems] = useState<TicketItem[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading, isError } = useTicket(id)
+  const { data: accounts = [], isLoading: accountsLoading } = useAccounts()
+  const updateTicket = useUpdateTicket()
+  const removePartMutation = useRemovePart()
+
   const [saving, setSaving] = useState(false)
   const [showAddPart, setShowAddPart] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -102,6 +106,26 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [draftDescription, setDraftDescription] = useState("")
   const { confirm, dialog } = useConfirm()
 
+  const ticket = data?.ticket ?? null
+  const items = data?.items ?? []
+  const statusHistory = data?.statusHistory ?? []
+
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (data && !initialized.current) {
+      initialized.current = true
+      setDraftStatus(data.ticket.status)
+      setDraftPaymentStatus(data.ticket.paymentStatus)
+      setDraftPaymentAccountId(data.ticket.paymentAccountId ? String(data.ticket.paymentAccountId) : "none")
+      setDraftLaborCost(data.ticket.laborCost ?? "")
+      setDraftAmountPaid(data.ticket.amountPaid ?? "0")
+      setDraftImei(data.ticket.imei ?? "")
+      setDraftPasscode(data.ticket.passcode ?? "")
+      setDraftDescription(data.ticket.problemDescription ?? "")
+    }
+  }, [data])
+
   const computeTotal = useCallback(() => {
     const partsSum = items.reduce(
       (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
@@ -109,37 +133,6 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     )
     return partsSum + parseFloat(draftLaborCost || "0")
   }, [items, draftLaborCost])
-
-  useEffect(() => {
-    fetch(`/api/tickets/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found")
-        return res.json()
-      })
-      .then((data) => {
-        setTicket(data.ticket)
-        setItems(data.items)
-        setStatusHistory(data.statusHistory ?? [])
-        setDraftStatus(data.ticket.status)
-        setDraftPaymentStatus(data.ticket.paymentStatus)
-        setDraftPaymentAccountId(data.ticket.paymentAccountId ? String(data.ticket.paymentAccountId) : "none")
-        setDraftLaborCost(data.ticket.laborCost ?? "")
-        setDraftAmountPaid(data.ticket.amountPaid ?? "0")
-        setDraftImei(data.ticket.imei ?? "")
-        setDraftPasscode(data.ticket.passcode ?? "")
-        setDraftDescription(data.ticket.problemDescription ?? "")
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-
-    fetch("/api/accounts")
-      .then((res) => {
-        if (!res.ok) throw new Error()
-        return res.json()
-      })
-      .then((data) => setAccounts(data.accounts))
-      .catch(() => {})
-  }, [id])
 
   const hasChanges = ticket && (
     draftStatus !== ticket.status ||
@@ -152,7 +145,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     draftDescription !== (ticket.problemDescription ?? "")
   )
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!ticket || !hasChanges) return
     setSaving(true)
     setFieldErrors({})
@@ -182,66 +175,49 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       return
     }
 
-    try {
-      const body: Record<string, any> = {
-        status: draftStatus,
-        paymentStatus: draftPaymentStatus,
-        paymentAccountId: draftPaymentAccountId === "none" ? null : Number(draftPaymentAccountId),
-        laborCost: draftLaborCost || null,
-        imei: draftImei || null,
-        passcode: draftPasscode || null,
-        problemDescription: draftDescription || null,
-      }
-      if (draftPaymentStatus === "partially_paid") {
-        body.amountPaid = draftAmountPaid || "0"
-      }
-      const res = await fetch(`/api/tickets/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setFieldErrors({ form: data.error || "Failed to save changes" })
-        setSaving(false)
-        return
-      }
-      setTicket({ ...ticket, ...data.ticket })
-      if (draftStatus !== ticket.status) {
-        const historyRes = await fetch(`/api/tickets/${id}`)
-        if (historyRes.ok) {
-          const historyData = await historyRes.json()
-          setStatusHistory(historyData.statusHistory ?? [])
-        }
-      }
-      toast.success("Ticket updated successfully")
-    } catch {
-      setFieldErrors({ form: "Failed to save changes" })
+    const body: Record<string, any> = {
+      status: draftStatus,
+      paymentStatus: draftPaymentStatus,
+      paymentAccountId: draftPaymentAccountId === "none" ? null : Number(draftPaymentAccountId),
+      laborCost: draftLaborCost || null,
+      imei: draftImei || null,
+      passcode: draftPasscode || null,
+      problemDescription: draftDescription || null,
     }
-    setSaving(false)
+    if (draftPaymentStatus === "partially_paid") {
+      body.amountPaid = draftAmountPaid || "0"
+    }
+
+    updateTicket.mutate(
+      { id, ...body },
+      {
+        onSuccess: () => {
+          toast.success("Ticket updated successfully")
+        },
+        onError: () => {
+          setFieldErrors({ form: "Failed to save changes" })
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
+      }
+    )
   }
 
   const removePart = async (itemId: number) => {
-    const ok = await confirm({ title: "Remove Part", description: "Remove this part from the ticket? Stock will be restored.", variant: "destructive" }); if (!ok) return
-    try {
-      const res = await fetch(`/api/tickets/${id}/items`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId }),
-      })
-      if (res.ok) {
-        setItems((prev) => prev.filter((i) => i.id !== itemId))
-        toast.success("Part removed from ticket")
+    const ok = await confirm({ title: "Remove Part", description: "Remove this part from the ticket? Stock will be restored.", variant: "destructive" })
+    if (!ok) return
+    removePartMutation.mutate(
+      { ticketId: id, itemId },
+      {
+        onSuccess: () => {
+          toast.success("Part removed from ticket")
+        },
       }
-    } catch {}
+    )
   }
 
-  const refreshParts = () => {
-    fetch(`/api/tickets/${id}`)
-      .then((res) => res.json())
-      .then((data) => setItems(data.items))
-      .catch(() => {})
-  }
+  const loading = isLoading || accountsLoading
 
   if (loading) {
     return (
@@ -252,7 +228,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  if (!ticket) {
+  if (isError || !ticket) {
     return (
       <div className="text-center py-24 text-muted-foreground">
         Ticket not found.
@@ -279,7 +255,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Ticket {id}</h1>
               <TicketStatusBadge status={draftStatus} />
             </div>
-            <p className="text-muted-foreground">{capitalize(ticket.brand)} {ticket.model} — {ticket.customerName}</p>
+            <p className="text-muted-foreground">{capitalize(ticket.brand)} {ticket.model} {ticket.customerName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -571,7 +547,6 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         ticketId={id}
         onPartAdded={() => {
           toast.success("Part added to ticket")
-          refreshParts()
         }}
       />
       {dialog}

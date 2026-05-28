@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,12 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
 import { DatePicker } from "@/components/date-picker"
-
-interface Account {
-  id: number
-  name: string
-  balance: string
-}
+import { useAccounts } from "@/hooks/queries/use-accounts"
+import { useCreateExpense } from "@/hooks/mutations/use-create-expense"
 
 interface CreateExpenseFormProps {
   onSuccess: () => void
@@ -21,6 +17,9 @@ interface CreateExpenseFormProps {
 }
 
 export function CreateExpenseForm({ onSuccess, onCancel }: CreateExpenseFormProps) {
+  const { data: accounts = [] } = useAccounts()
+  const createExpense = useCreateExpense()
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [description, setDescription] = useState("")
@@ -29,50 +28,37 @@ export function CreateExpenseForm({ onSuccess, onCancel }: CreateExpenseFormProp
   const [customCategory, setCustomCategory] = useState("")
   const [accountId, setAccountId] = useState("")
   const [date, setDate] = useState<Date>(new Date())
-  const [accounts, setAccounts] = useState<Account[]>([])
-
-  useEffect(() => {
-    fetch("/api/accounts")
-      .then((res) => {
-        if (!res.ok) throw new Error()
-        return res.json()
-      })
-      .then((data) => setAccounts(data.accounts ?? []))
-      .catch(() => toast.error("Failed to load accounts"))
-  }, [])
 
   const selectedAccount = accounts.find((a) => String(a.id) === accountId)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError("")
 
-    try {
-      const res = await fetch("/api/expenses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description,
-          amount,
-          category: category === "other" ? (customCategory || undefined) : (category || undefined),
-          accountId,
-          accountName: selectedAccount?.name,
-          date: date.toISOString(),
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || "Failed to create expense")
-        setSaving(false)
-        return
+    createExpense.mutate(
+      {
+        description,
+        amount: Number(amount),
+        category: category === "other" ? (customCategory || undefined) : (category || undefined),
+        accountId: Number(accountId),
+        accountName: selectedAccount?.name,
+        date: date.toISOString(),
+      } as any,
+      {
+        onSuccess: () => {
+          toast.success("Expense created successfully")
+          onSuccess()
+        },
+        onError: () => {
+          setError("Failed to create expense")
+          setSaving(false)
+        },
+        onSettled: () => {
+          setSaving(false)
+        },
       }
-      toast.success("Expense created successfully")
-      onSuccess()
-    } catch {
-      toast.error("Failed to create expense")
-      setSaving(false)
-    }
+    )
   }
 
   return (

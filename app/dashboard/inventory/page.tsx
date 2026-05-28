@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
@@ -18,55 +18,24 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { SlideOver } from "@/components/slide-over"
 import { CreateInventoryForm } from "@/components/forms/create-inventory-form"
 import { EditInventoryForm } from "@/components/forms/edit-inventory-form"
-
-interface InventoryItem {
-  id: number
-  partName: string
-  sku: string
-  compatibility: string | null
-  stockQty: number
-  lowStockThreshold: number | null
-  costPrice: string | null
-  sellingPrice: string | null
-}
+import { useInventory } from "@/hooks/queries/use-inventory"
+import { useDeleteInventoryItem } from "@/hooks/mutations/use-delete-inventory-item"
 
 export default function InventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [stockFilter, setStockFilter] = useState("all")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [error, setError] = useState("")
   const { confirm, dialog } = useConfirm()
   const [slideOverOpen, setSlideOverOpen] = useState(false)
   const [editItemId, setEditItemId] = useState<number | null>(null)
 
+  const { data: items = [], isLoading } = useInventory()
+  const deleteInventoryMutation = useDeleteInventoryItem()
+
   function openCreateSlide() { setEditItemId(null); setSlideOverOpen(true) }
   function openEditSlide(id: number) { setEditItemId(id); setSlideOverOpen(true) }
   function closeSlide() { setSlideOverOpen(false); setEditItemId(null) }
-
-  function refreshItems() {
-    fetch("/api/inventory")
-      .then((res) => res.ok ? res.json() : Promise.reject())
-      .then((data) => setItems(data.items ?? []))
-      .catch(() => toast.error("Failed to refresh inventory"))
-  }
-
-  useEffect(() => {
-    fetch("/api/inventory")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch")
-        return res.json()
-      })
-      .then((data) => setItems(data.items ?? []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
-
-  useEffect(() => {
-    if (error) toast.error(error)
-  }, [error])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -121,13 +90,10 @@ export default function InventoryPage() {
     const ok = await confirm({ title: "Delete part", description: `Delete "${name}"? This cannot be undone.`, variant: "destructive" })
     if (!ok) return
 
-    const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" })
-    if (res.ok) {
-      setItems((prev) => prev.filter((i) => i.id !== id))
-      toast.success("Item deleted successfully")
-    } else {
-      toast.error("Failed to delete item")
-    }
+    deleteInventoryMutation.mutate(id, {
+      onSuccess: () => toast.success("Item deleted successfully"),
+      onError: () => toast.error("Failed to delete item"),
+    })
   }
 
   const clearFilters = () => {
@@ -150,7 +116,7 @@ export default function InventoryPage() {
           </Button>
         </div>
 
-        {!loading && (
+        {!isLoading && (
           <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <StaggerItem>
               <HoverCard>
@@ -274,7 +240,7 @@ export default function InventoryPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {isLoading ? (
                 <div className="space-y-4">
                   <Skeleton className="h-8 w-48" />
                   <Skeleton className="h-4 w-64 mt-2" />
@@ -390,9 +356,9 @@ export default function InventoryPage() {
         gradient="inventory"
       >
         {editItemId ? (
-          <EditInventoryForm itemId={editItemId} onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+          <EditInventoryForm itemId={editItemId} onSuccess={() => { closeSlide() }} onCancel={closeSlide} />
         ) : (
-          <CreateInventoryForm onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+          <CreateInventoryForm onSuccess={() => { closeSlide() }} onCancel={closeSlide} />
         )}
       </SlideOver>
     </PageTransition>

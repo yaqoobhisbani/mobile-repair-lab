@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,24 +16,19 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { SlideOver } from "@/components/slide-over"
 import { CreateCustomerForm } from "@/components/forms/create-customer-form"
 import { EditCustomerForm } from "@/components/forms/edit-customer-form"
-
-interface Customer {
-  id: number
-  name: string
-  phone: string
-  email: string | null
-  createdAt: string
-}
+import { useCustomers } from "@/hooks/queries/use-customers"
+import { useDeleteCustomer } from "@/hooks/mutations/use-delete-customer"
 
 export default function CustomersPage() {
   const { confirm, dialog } = useConfirm()
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
   const [editCustomerId, setEditCustomerId] = useState<number | null>(null)
+
+  const { data: customers = [], isLoading } = useCustomers()
+  const deleteCustomerMutation = useDeleteCustomer()
 
   const openCreateSlide = useCallback(() => {
     setEditCustomerId(null)
@@ -48,23 +43,6 @@ export default function CustomersPage() {
   const closeSlide = useCallback(() => {
     setSlideOverOpen(false)
     setEditCustomerId(null)
-  }, [])
-
-  const refreshItems = useCallback(async () => {
-    await fetch("/api/customers")
-      .then((res) => res.json())
-      .then((data) => setCustomers(data.customers ?? []))
-  }, [])
-
-  useEffect(() => {
-    fetch("/api/customers")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch")
-        return res.json()
-      })
-      .then((data) => setCustomers(data.customers ?? []))
-      .catch(() => toast.error("Failed to load customers"))
-      .finally(() => setLoading(false))
   }, [])
 
   const filtered = useMemo(() => {
@@ -98,11 +76,10 @@ export default function CustomersPage() {
   const handleDelete = async (id: number, name: string) => {
     const ok = await confirm({ title: "Delete customer", description: `Delete customer "${name}"? This cannot be undone.`, variant: "destructive" }); if (!ok) return
 
-    const res = await fetch(`/api/customers/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        setCustomers((prev) => prev.filter((c) => c.id !== id))
-        toast.success("Customer deleted successfully")
-      }
+    deleteCustomerMutation.mutate(id, {
+      onSuccess: () => toast.success("Customer deleted successfully"),
+      onError: () => toast.error("Failed to delete customer"),
+    })
   }
 
   return (
@@ -110,7 +87,7 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          {loading ? (
+          {isLoading ? (
             <>
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-4 w-64 mt-2" />
@@ -128,7 +105,7 @@ export default function CustomersPage() {
           </Button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
@@ -230,7 +207,7 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -321,9 +298,9 @@ export default function CustomersPage() {
         gradient="customers"
       >
         {editCustomerId ? (
-          <EditCustomerForm customerId={editCustomerId} onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+          <EditCustomerForm customerId={editCustomerId} onSuccess={() => { closeSlide() }} onCancel={closeSlide} />
         ) : (
-          <CreateCustomerForm onSuccess={() => { closeSlide(); refreshItems() }} onCancel={closeSlide} />
+          <CreateCustomerForm onSuccess={() => { closeSlide() }} onCancel={closeSlide} />
         )}
       </SlideOver>
     </PageTransition>
