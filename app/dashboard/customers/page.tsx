@@ -118,7 +118,7 @@ export default function CustomersPage() {
           ) : (
             <>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Customers</h1>
-              <p className="text-muted-foreground">Manage your customer directory.</p>
+              <p className="text-sm text-muted-foreground">Manage your customer directory.</p>
             </>
           )}
         </div>

@@ -141,10 +141,10 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left font-medium pb-3">Description</th>
-                  <th className="text-right font-medium pb-3">Qty</th>
-                  <th className="text-right font-medium pb-3">Unit Price</th>
-                  <th className="text-right font-medium pb-3">Amount</th>
+                  <th className="text-left pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Description</th>
+                  <th className="text-right pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Qty</th>
+                  <th className="text-right pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Unit Price</th>
+                  <th className="text-right pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
                 </tr>
               </thead>
               <tbody>

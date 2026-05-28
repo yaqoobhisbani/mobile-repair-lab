@@ -128,7 +128,7 @@ export default function TicketsPage() {
           ) : (
             <>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Tickets</h1>
-              <p className="text-muted-foreground">Manage all repair tickets.</p>
+              <p className="text-sm text-muted-foreground">Manage all repair tickets.</p>
             </>
           )}
         </div>

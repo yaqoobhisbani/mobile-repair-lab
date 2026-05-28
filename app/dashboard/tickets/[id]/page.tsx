@@ -308,7 +308,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <Label className="text-muted-foreground text-xs">Status</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                 <Select value={draftStatus} onValueChange={setDraftStatus}>
                   <SelectTrigger>
                     <SelectValue />
@@ -321,7 +321,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 </Select>
               </div>
               <div>
-                <Label className="text-muted-foreground text-xs">IMEI</Label>
+                <Label className="text-sm font-medium text-muted-foreground">IMEI</Label>
                 <Input
                   value={draftImei}
                   onChange={(e) => setDraftImei(e.target.value)}
@@ -329,7 +329,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 />
               </div>
               <div>
-                <Label className="text-muted-foreground text-xs">Passcode</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Passcode</Label>
                 <Input
                   value={draftPasscode}
                   onChange={(e) => setDraftPasscode(e.target.value)}
@@ -339,11 +339,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <Separator />
             <div>
-              <Label className="text-muted-foreground text-xs">Problem Category</Label>
+              <Label className="text-sm font-medium text-muted-foreground">Problem Category</Label>
               <p className="text-sm font-medium capitalize mt-1">{ticket.problemCategory ?? "—"}</p>
             </div>
             <div>
-              <Label className="text-muted-foreground text-xs">Problem Description</Label>
+              <Label className="text-sm font-medium text-muted-foreground">Problem Description</Label>
               <textarea
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm mt-1"
                 value={draftDescription}
@@ -387,7 +387,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label className="text-muted-foreground text-xs">Payment Status</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Payment Status</Label>
                 <Select value={draftPaymentStatus} onValueChange={setDraftPaymentStatus}>
                   <SelectTrigger>
                     <SelectValue />
@@ -400,7 +400,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 </Select>
               </div>
               <div>
-                <Label className="text-muted-foreground text-xs">Account</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Account</Label>
                 <Select value={draftPaymentAccountId} onValueChange={(v) => { setDraftPaymentAccountId(v); setFieldErrors((prev) => ({ ...prev, paymentAccountId: "" })) }}>
                   <SelectTrigger className={fieldErrors.paymentAccountId ? "border-destructive" : ""}>
                     <SelectValue placeholder="Select account" />
@@ -418,7 +418,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               </div>
             {draftPaymentStatus === "partially_paid" && (
               <div>
-                <Label className="text-muted-foreground text-xs">Amount Paid (Rs.)</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Amount Paid (Rs.)</Label>
                 <Input
                   type="number"
                   min="0"

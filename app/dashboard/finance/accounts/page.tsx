@@ -123,7 +123,7 @@ export default function AccountsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-emerald-500 to-cyan-500 bg-clip-text text-transparent">Accounts</h1>
-          <p className="text-muted-foreground">Manage payment receivable accounts.</p>
+          <p className="text-sm text-muted-foreground">Manage payment receivable accounts.</p>
         </div>
         <Button onClick={openCreateSlide}>
           <Plus className="h-4 w-4 mr-2" />

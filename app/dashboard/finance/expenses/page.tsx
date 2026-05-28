@@ -158,7 +158,7 @@ export default function ExpensesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-red-600 bg-clip-text text-transparent">Expenses</h1>
-          <p className="text-muted-foreground">Track all business expenses.</p>
+          <p className="text-sm text-muted-foreground">Track all business expenses.</p>
         </div>
         <Button onClick={() => setSlideOverOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />

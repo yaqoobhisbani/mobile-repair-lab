@@ -23,7 +23,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-600 to-slate-600 bg-clip-text text-transparent">Settings</h1>
-        <p className="text-muted-foreground">Manage your shop configuration.</p>
+        <p className="text-sm text-muted-foreground">Manage your shop configuration.</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">

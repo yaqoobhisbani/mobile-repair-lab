@@ -237,10 +237,10 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 px-2 font-medium">Date</th>
-                      <th className="text-left py-2 px-2 font-medium">Description</th>
-                      <th className="text-left py-2 px-2 font-medium">Reference</th>
-                      <th className="text-right py-2 px-2 font-medium">Amount</th>
+                      <th className="text-left py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+                      <th className="text-left py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Description</th>
+                      <th className="text-left py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Reference</th>
+                      <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
                     </tr>
                   </thead>
                   <tbody>

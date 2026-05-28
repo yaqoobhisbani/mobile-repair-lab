@@ -143,7 +143,7 @@ export default function DashboardOverview() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Overview</h1>
-          <p className="text-muted-foreground">Welcome back! Here is what is happening today.</p>
+          <p className="text-sm text-muted-foreground">Welcome back! Here is what is happening today.</p>
         </div>
 
         <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -151,7 +151,7 @@ export default function DashboardOverview() {
             <HoverCard>
               <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Active Tickets</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Tickets</CardTitle>
                   <ClipboardList className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
@@ -173,7 +173,7 @@ export default function DashboardOverview() {
             <HoverCard>
               <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Parts in Stock</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Parts in Stock</CardTitle>
                   <Package className="h-4 w-4 text-emerald-500" />
                 </CardHeader>
                 <CardContent>
@@ -189,7 +189,7 @@ export default function DashboardOverview() {
             <HoverCard>
               <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Available Balance</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Available Balance</CardTitle>
                   <DollarSign className="h-4 w-4 text-violet-500" />
                 </CardHeader>
                 <CardContent>
@@ -205,7 +205,7 @@ export default function DashboardOverview() {
             <HoverCard>
               <Card className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/60 dark:to-background border-rose-100 dark:border-rose-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Expenses This Month</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Expenses This Month</CardTitle>
                   <DollarSign className="h-4 w-4 text-rose-500" />
                 </CardHeader>
                 <CardContent>

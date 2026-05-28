@@ -120,7 +120,7 @@ export default function ReportsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">Profit Report</h1>
-          <p className="text-muted-foreground">Track earnings from labor and parts.</p>
+          <p className="text-sm text-muted-foreground">Track earnings from labor and parts.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()) }}>
@@ -260,11 +260,11 @@ export default function ReportsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">Period</th>
-                        <th className="pb-3 font-medium text-right">Parts Profit</th>
-                        <th className="pb-3 font-medium text-right">Labor Profit</th>
-                        <th className="pb-3 font-medium text-right">Total Profit</th>
-                        <th className="pb-3 font-medium text-right">Tickets</th>
+                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-left">Period</th>
+                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Parts Profit</th>
+                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Labor Profit</th>
+                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Total Profit</th>
+                        <th className="pb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider text-right">Tickets</th>
                       </tr>
                     </thead>
                     <tbody>

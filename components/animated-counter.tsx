@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useInView } from "framer-motion"
+import { cn } from "@/lib/utils"
 
 interface AnimatedCounterProps {
   from?: number
@@ -44,10 +45,15 @@ export function AnimatedCounter({
     requestAnimationFrame(animate)
   }, [isInView, from, to, duration, decimals])
 
+  const formatted = displayed.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+
+  const digitCount = String(Math.round(to)).length
+  const sizeClass = digitCount > 9 ? "text-lg" : digitCount > 5 ? "text-xl" : ""
+
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} className={cn(className, sizeClass, "text-nowrap")}>
       {prefix}
-      {displayed}
+      {formatted}
       {suffix}
     </span>
   )

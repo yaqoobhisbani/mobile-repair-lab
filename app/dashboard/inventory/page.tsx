@@ -142,7 +142,7 @@ export default function InventoryPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Inventory</h1>
-            <p className="text-muted-foreground">Manage spare parts and components.</p>
+            <p className="text-sm text-muted-foreground">Manage spare parts and components.</p>
           </div>
           <Button onClick={openCreateSlide}>
             <Plus className="h-4 w-4 mr-2" />
@@ -186,7 +186,7 @@ export default function InventoryPage() {
                     <DollarSign className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold"><AnimatedCounter to={Math.round(stats.totalInvestment)} prefix="Rs. " /></p>
+                    <p className="text-2xl font-bold">                    <AnimatedCounter to={Math.round(stats.totalInvestment)} prefix="Rs. " /></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -299,7 +299,7 @@ export default function InventoryPage() {
                     }
                   />
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
+                  <div className="text-center py-12 text-sm text-muted-foreground">
                     No parts found matching your filters.
                   </div>
                 )
