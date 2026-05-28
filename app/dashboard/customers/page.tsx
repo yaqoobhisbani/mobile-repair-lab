@@ -25,14 +25,13 @@ interface Customer {
   createdAt: string
 }
 
-const ITEMS_PER_PAGE = 10
-
 export default function CustomersPage() {
   const { confirm, dialog } = useConfirm()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
   const [editCustomerId, setEditCustomerId] = useState<number | null>(null)
 
@@ -92,9 +91,9 @@ export default function CustomersPage() {
     return { total, withEmail, withoutEmail, thisMonth }
   }, [customers])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safePage = Math.min(page, totalPages)
-  const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
+  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const handleDelete = async (id: number, name: string) => {
     const ok = await confirm({ title: "Delete customer", description: `Delete customer "${name}"? This cannot be undone.`, variant: "destructive" }); if (!ok) return
@@ -303,8 +302,9 @@ export default function CustomersPage() {
                 currentPage={safePage}
                 totalPages={totalPages}
                 totalItems={filtered.length}
-                pageSize={ITEMS_PER_PAGE}
+                pageSize={pageSize}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
               />
             </>
           )}

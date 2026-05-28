@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface DataTablePaginationProps {
@@ -9,7 +10,10 @@ interface DataTablePaginationProps {
   totalItems: number
   pageSize: number
   onPageChange: (page: number) => void
+  onPageSizeChange?: (size: number) => void
 }
+
+const pageSizeOptions = [10, 50, 100]
 
 export function DataTablePagination({
   currentPage,
@@ -17,15 +21,36 @@ export function DataTablePagination({
   totalItems,
   pageSize,
   onPageChange,
+  onPageSizeChange,
 }: DataTablePaginationProps) {
-  const from = (currentPage - 1) * pageSize + 1
+  const from = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const to = Math.min(currentPage * pageSize, totalItems)
 
   return (
-    <div className="flex items-center justify-between text-sm text-muted-foreground pt-4">
-      <p>
-        Showing {from}–{to} of {totalItems}
-      </p>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground pt-4">
+      <div className="flex items-center gap-2">
+        <p>
+          Showing {from}–{to} of {totalItems}
+        </p>
+        {onPageSizeChange && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">per page:</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => onPageSizeChange(Number(v))}
+            >
+              <SelectTrigger className="h-7 w-16">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((size) => (
+                  <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
       <div className="flex items-center gap-1">
         <Button
           variant="outline"

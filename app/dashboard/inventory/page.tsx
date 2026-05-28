@@ -30,14 +30,13 @@ interface InventoryItem {
   sellingPrice: string | null
 }
 
-const ITEMS_PER_PAGE = 7
-
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [stockFilter, setStockFilter] = useState("all")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [error, setError] = useState("")
   const { confirm, dialog } = useConfirm()
   const [slideOverOpen, setSlideOverOpen] = useState(false)
@@ -92,9 +91,9 @@ export default function InventoryPage() {
     })
   }, [items, search, stockFilter])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safePage = Math.min(page, totalPages)
-  const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
+  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const stats = useMemo(() => {
     const totalParts = items.length
@@ -372,8 +371,9 @@ export default function InventoryPage() {
                     currentPage={safePage}
                     totalPages={totalPages}
                     totalItems={filtered.length}
-                    pageSize={ITEMS_PER_PAGE}
+                    pageSize={pageSize}
                     onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                   />
                 </>
               )}

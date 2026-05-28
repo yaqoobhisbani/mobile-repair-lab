@@ -27,8 +27,6 @@ interface Account {
   createdAt: string
 }
 
-const ITEMS_PER_PAGE = 10
-
 const typeLabels: Record<string, string> = {
   bank: "Bank Account",
   cash: "Cash",
@@ -42,6 +40,7 @@ export default function AccountsPage() {
   const [page, setPage] = useState(1)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
   const [editAccountId, setEditAccountId] = useState<number | null>(null)
+  const [pageSize, setPageSize] = useState(10)
 
   function openCreateSlide() { setEditAccountId(null); setSlideOverOpen(true) }
   function openEditSlide(id: number) { setEditAccountId(id); setSlideOverOpen(true) }
@@ -76,9 +75,9 @@ export default function AccountsPage() {
     )
   }, [accounts, search])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safePage = Math.min(page, totalPages)
-  const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
+  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const deleteAccount = async (id: number, name: string) => {
     const ok = await confirm({ title: "Delete account", description: `Delete "${name}"? This cannot be undone.`, variant: "destructive" }); if (!ok) return
@@ -273,8 +272,9 @@ export default function AccountsPage() {
                 currentPage={safePage}
                 totalPages={totalPages}
                 totalItems={filtered.length}
-                pageSize={ITEMS_PER_PAGE}
+                pageSize={pageSize}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
               />
             </>
           )}

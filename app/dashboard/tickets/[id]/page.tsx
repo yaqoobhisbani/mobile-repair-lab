@@ -15,6 +15,7 @@ import { AddPartDialog } from "@/components/add-part-dialog"
 import { ArrowLeft, Download, Loader2, Plus, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useConfirm } from "@/hooks/use-confirm"
+import { cn } from "@/lib/utils"
 
 interface TicketData {
   id: string
@@ -88,11 +89,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showAddPart, setShowAddPart] = useState(false)
-  const [error, setError] = useState("")
-
-  useEffect(() => {
-    if (error) toast.error(error)
-  }, [error])
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const [draftStatus, setDraftStatus] = useState("")
   const [draftPaymentStatus, setDraftPaymentStatus] = useState("")
@@ -157,7 +154,33 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const handleSave = async () => {
     if (!ticket || !hasChanges) return
     setSaving(true)
-    setError("")
+    setFieldErrors({})
+
+    const errors: Record<string, string> = {}
+
+    if ((draftPaymentStatus === "paid" || draftPaymentStatus === "partially_paid") && draftPaymentAccountId === "none") {
+      errors.paymentAccountId = "Account is required when payment status is Paid or Partially Paid"
+    }
+
+    if (draftPaymentStatus === "partially_paid") {
+      const amount = parseFloat(draftAmountPaid || "0")
+      if (!draftAmountPaid || amount <= 0) {
+        errors.amountPaid = "Amount paid must be greater than 0"
+      } else if (amount > computeTotal()) {
+        errors.amountPaid = `Amount paid (Rs. ${amount.toFixed(2)}) exceeds total (Rs. ${computeTotal().toFixed(2)})`
+      }
+    }
+
+    if (draftLaborCost && (isNaN(parseFloat(draftLaborCost)) || parseFloat(draftLaborCost) < 0)) {
+      errors.laborCost = "Labor cost must be a valid positive number"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      setSaving(false)
+      return
+    }
+
     try {
       const body: Record<string, any> = {
         status: draftStatus,
@@ -178,14 +201,21 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Failed to save changes")
+        setFieldErrors({ form: data.error || "Failed to save changes" })
         setSaving(false)
         return
       }
       setTicket({ ...ticket, ...data.ticket })
+      if (draftStatus !== ticket.status) {
+        const historyRes = await fetch(`/api/tickets/${id}`)
+        if (historyRes.ok) {
+          const historyData = await historyRes.json()
+          setStatusHistory(historyData.statusHistory ?? [])
+        }
+      }
       toast.success("Ticket updated successfully")
     } catch {
-      setError("Failed to save changes")
+      setFieldErrors({ form: "Failed to save changes" })
     }
     setSaving(false)
   }
@@ -230,7 +260,12 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <div className="space-y-6">
+      <div className="space-y-6">
+      {fieldErrors.form && (
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+          {fieldErrors.form}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/tickets">
@@ -365,8 +400,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Account</Label>
-                <Select value={draftPaymentAccountId} onValueChange={setDraftPaymentAccountId}>
-                  <SelectTrigger>
+                <Select value={draftPaymentAccountId} onValueChange={(v) => { setDraftPaymentAccountId(v); setFieldErrors((prev) => ({ ...prev, paymentAccountId: "" })) }}>
+                  <SelectTrigger className={fieldErrors.paymentAccountId ? "border-destructive" : ""}>
                     <SelectValue placeholder="Select account" />
                   </SelectTrigger>
                   <SelectContent>
@@ -376,6 +411,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.paymentAccountId && (
+                  <p className="text-xs text-destructive mt-1">{fieldErrors.paymentAccountId}</p>
+                )}
               </div>
             {draftPaymentStatus === "partially_paid" && (
               <div>
@@ -385,11 +423,16 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   min="0"
                   step="0.01"
                   value={draftAmountPaid}
-                  onChange={(e) => setDraftAmountPaid(e.target.value)}
+                  onChange={(e) => { setDraftAmountPaid(e.target.value); setFieldErrors((prev) => ({ ...prev, amountPaid: "" })) }}
+                  className={fieldErrors.amountPaid ? "border-destructive" : ""}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Remaining: Rs. {Math.max(0, computeTotal() - parseFloat(draftAmountPaid || "0")).toFixed(2)}
-                </p>
+                {fieldErrors.amountPaid ? (
+                  <p className="text-xs text-destructive mt-1">{fieldErrors.amountPaid}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Remaining: Rs. {Math.max(0, computeTotal() - parseFloat(draftAmountPaid || "0")).toFixed(2)}
+                  </p>
+                )}
               </div>
             )}
             {draftPaymentStatus === "paid" && (
@@ -507,9 +550,12 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     min="0"
                     step="0.01"
                     value={draftLaborCost}
-                    onChange={(e) => setDraftLaborCost(e.target.value)}
-                    className="h-8 w-28"
+                    onChange={(e) => { setDraftLaborCost(e.target.value); setFieldErrors((prev) => ({ ...prev, laborCost: "" })) }}
+                    className={cn("h-8 w-28", fieldErrors.laborCost && "border-destructive")}
                   />
+                  {fieldErrors.laborCost && (
+                    <p className="text-xs text-destructive mt-1">{fieldErrors.laborCost}</p>
+                  )}
                 </TableCell>
                 <TableCell className="text-right" />
               </TableRow>

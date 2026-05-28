@@ -1,15 +1,20 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect, use, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Landmark, ArrowUpRight, ArrowDownRight, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { PageTransition } from "@/components/page-transition"
+import { DataTablePagination } from "@/components/data-table-pagination"
+import { DatePicker } from "@/components/date-picker"
+import { MonthPicker } from "@/components/month-picker"
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns"
 
 interface Transaction {
   id: number
@@ -48,6 +53,10 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
   const [account, setAccount] = useState<Account | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [datePeriod, setDatePeriod] = useState("all")
+  const [referenceDate, setReferenceDate] = useState(new Date())
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +71,47 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
       .catch(() => toast.error("Failed to load account"))
       .finally(() => setLoading(false))
   }, [id])
+
+  const getDateRange = useMemo(() => {
+    const ref = referenceDate
+    switch (datePeriod) {
+      case "daily": {
+        const start = new Date(ref)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(ref)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      }
+      case "yearly": {
+        const start = startOfYear(ref)
+        start.setHours(0, 0, 0, 0)
+        const end = endOfYear(ref)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      }
+      case "monthly":
+      default: {
+        const start = startOfMonth(ref)
+        start.setHours(0, 0, 0, 0)
+        const end = endOfMonth(ref)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      }
+    }
+  }, [datePeriod, referenceDate])
+
+  const filteredTransactions = useMemo(() => {
+    if (datePeriod === "all") return transactions
+    const range = getDateRange
+    return transactions.filter((t) => {
+      const date = parseISO(t.createdAt)
+      return isWithinInterval(date, { start: range.start, end: range.end })
+    })
+  }, [transactions, datePeriod, getDateRange])
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const paginated = filteredTransactions.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   if (loading) {
     return (
@@ -83,11 +133,11 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  const totalCredits = transactions
+  const totalCredits = filteredTransactions
     .filter((t) => t.type === "credit")
     .reduce((s, t) => s + parseFloat(t.amount), 0)
 
-  const totalDebits = transactions
+  const totalDebits = filteredTransactions
     .filter((t) => t.type === "debit")
     .reduce((s, t) => s + parseFloat(t.amount), 0)
 
@@ -122,7 +172,7 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Credits</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-emerald-600">Rs. {totalCredits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold text-emerald-600 inline-flex items-center gap-1"><ArrowUpRight className="h-5 w-5" />Rs. {totalCredits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
             </CardContent>
           </Card>
           <Card>
@@ -130,7 +180,7 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Debits</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-rose-600">Rs. {totalDebits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold text-rose-600 inline-flex items-center gap-1"><ArrowDownRight className="h-5 w-5" />Rs. {totalDebits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
             </CardContent>
           </Card>
           <Card>
@@ -138,20 +188,52 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
               <CardTitle className="text-sm font-medium text-muted-foreground">Transactions</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{transactions.length}</p>
+              <p className="text-2xl font-bold">{filteredTransactions.length}</p>
             </CardContent>
           </Card>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <CardTitle>Transaction History</CardTitle>
+              <div className="flex items-center gap-2">
+                <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()); setPage(1) }}>
+                  <SelectTrigger className="w-28 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Today</SelectItem>
+                    <SelectItem value="monthly">This Month</SelectItem>
+                    <SelectItem value="yearly">This Year</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
+                  </SelectContent>
+                </Select>
+                {datePeriod === "daily" && (
+                  <DatePicker value={referenceDate} onChange={(d) => { if (d) setReferenceDate(d) }} className="h-8 w-36" />
+                )}
+                {datePeriod === "monthly" && (
+                  <MonthPicker value={referenceDate} onChange={(d) => setReferenceDate(d)} className="h-8 w-36" />
+                )}
+                {datePeriod === "yearly" && (
+                  <select
+                    value={referenceDate.getFullYear()}
+                    onChange={(e) => setReferenceDate(new Date(Number(e.target.value), 0, 1))}
+                    className="h-8 text-sm rounded-md border border-input bg-transparent px-2 w-24"
+                  >
+                    {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {transactions.length === 0 ? (
+            {filteredTransactions.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No transactions yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <><div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
@@ -162,7 +244,7 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((t) => (
+                    {paginated.map((t) => (
                       <tr key={t.id} className="border-b last:border-0 hover:bg-muted/50">
                         <td className="py-3 px-2 text-muted-foreground whitespace-nowrap">
                           {new Date(t.createdAt).toLocaleDateString("en-US", {
@@ -201,6 +283,14 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                   </tbody>
                 </table>
               </div>
+              <DataTablePagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                totalItems={filteredTransactions.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              /></>
             )}
           </CardContent>
         </Card>

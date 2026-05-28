@@ -28,17 +28,16 @@ interface Ticket {
   createdAt: string
 }
 
-const ITEMS_PER_PAGE = 7
-
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [page, setPage] = useState(1)
   const [error, setError] = useState("")
   const { confirm, dialog } = useConfirm()
   const [slideOverOpen, setSlideOverOpen] = useState(false)
+  const [pageSize, setPageSize] = useState(10)
+  const [page, setPage] = useState(1)
 
   const openSlide = useCallback(() => setSlideOverOpen(true), [])
   const closeSlide = useCallback(() => setSlideOverOpen(false), [])
@@ -78,9 +77,9 @@ export default function TicketsPage() {
     })
   }, [search, statusFilter, tickets])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safePage = Math.min(page, totalPages)
-  const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
+  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const hasFilters = search || statusFilter !== "all"
 
@@ -318,8 +317,9 @@ export default function TicketsPage() {
                 currentPage={safePage}
                 totalPages={totalPages}
                 totalItems={filtered.length}
-                pageSize={ITEMS_PER_PAGE}
+                pageSize={pageSize}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
               />
             </>
           )}

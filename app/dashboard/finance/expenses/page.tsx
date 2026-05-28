@@ -16,6 +16,9 @@ import { AnimatedCounter } from "@/components/animated-counter"
 import { useConfirm } from "@/hooks/use-confirm"
 import { SlideOver } from "@/components/slide-over"
 import { CreateExpenseForm } from "@/components/forms/create-expense-form"
+import { DatePicker } from "@/components/date-picker"
+import { MonthPicker } from "@/components/month-picker"
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns"
 
 interface Expense {
   id: number
@@ -28,20 +31,22 @@ interface Expense {
   createdAt: string
 }
 
-const ITEMS_PER_PAGE = 10
-
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-}
-
 export default function ExpensesPage() {
   const { confirm, dialog } = useConfirm()
+
+  function formatDate(d: string) {
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [slideOverOpen, setSlideOverOpen] = useState(false)
+  const [datePeriod, setDatePeriod] = useState("monthly")
+  const [referenceDate, setReferenceDate] = useState<Date>(new Date())
 
   useEffect(() => {
     fetch("/api/expenses")
@@ -77,9 +82,42 @@ export default function ExpensesPage() {
     return { todayTotal, monthTotal, allTime, count }
   }, [expenses])
 
+  const getDateRange = useMemo(() => {
+    const ref = referenceDate
+    switch (datePeriod) {
+      case "daily": {
+        const start = new Date(ref)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(ref)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      }
+      case "yearly": {
+        const start = startOfYear(ref)
+        start.setHours(0, 0, 0, 0)
+        const end = endOfYear(ref)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      }
+      case "monthly":
+      default: {
+        const start = startOfMonth(ref)
+        start.setHours(0, 0, 0, 0)
+        const end = endOfMonth(ref)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      }
+    }
+  }, [datePeriod, referenceDate])
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     return expenses.filter((e) => {
+      const expenseDate = parseISO(e.date)
+      if (datePeriod !== "all") {
+        const range = getDateRange
+        if (!isWithinInterval(expenseDate, { start: range.start, end: range.end })) return false
+      }
       const matchesSearch =
         !q ||
         e.description.toLowerCase().includes(q) ||
@@ -88,17 +126,19 @@ export default function ExpensesPage() {
       const matchesCategory = categoryFilter === "all" || e.category === categoryFilter
       return matchesSearch && matchesCategory
     })
-  }, [expenses, search, categoryFilter])
+  }, [expenses, search, categoryFilter, datePeriod, getDateRange])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safePage = Math.min(page, totalPages)
-  const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
+  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
-  const hasFilters = search || categoryFilter !== "all"
+  const hasFilters = search || categoryFilter !== "all" || datePeriod !== "all"
 
   const clearFilters = () => {
     setSearch("")
     setCategoryFilter("all")
+    setDatePeriod("monthly")
+    setReferenceDate(new Date())
     setPage(1)
   }
 
@@ -232,8 +272,46 @@ export default function ExpensesPage() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               />
             </div>
+            <div className="flex items-center gap-2">
+              <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()); setPage(1) }}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Today</SelectItem>
+                  <SelectItem value="monthly">This Month</SelectItem>
+                  <SelectItem value="yearly">This Year</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                </SelectContent>
+              </Select>
+              {datePeriod === "daily" && (
+                <DatePicker
+                  value={referenceDate}
+                  onChange={(d) => { if (d) setReferenceDate(d) }}
+                  className="h-9 w-40"
+                />
+              )}
+              {datePeriod === "monthly" && (
+                <MonthPicker
+                  value={referenceDate}
+                  onChange={(d) => setReferenceDate(d)}
+                  className="h-9 w-40"
+                />
+              )}
+              {datePeriod === "yearly" && (
+                <select
+                  value={referenceDate.getFullYear()}
+                  onChange={(e) => setReferenceDate(new Date(Number(e.target.value), 0, 1))}
+                  className="h-9 text-sm rounded-md border border-input bg-transparent px-3 w-28"
+                >
+                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1) }}>
-              <SelectTrigger className="w-full sm:w-44">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -321,8 +399,9 @@ export default function ExpensesPage() {
                 currentPage={safePage}
                 totalPages={totalPages}
                 totalItems={filtered.length}
-                pageSize={ITEMS_PER_PAGE}
+                pageSize={pageSize}
                 onPageChange={setPage}
+                onPageSizeChange={setPageSize}
               />
             </>
           )}
