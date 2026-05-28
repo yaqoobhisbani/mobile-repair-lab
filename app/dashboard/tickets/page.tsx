@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,8 @@ import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
 import { useConfirm } from "@/hooks/use-confirm"
+import { SlideOver } from "@/components/slide-over"
+import { CreateTicketForm } from "@/components/forms/create-ticket-form"
 
 interface Ticket {
   id: string
@@ -36,6 +38,16 @@ export default function TicketsPage() {
   const [page, setPage] = useState(1)
   const [error, setError] = useState("")
   const { confirm, dialog } = useConfirm()
+  const [slideOverOpen, setSlideOverOpen] = useState(false)
+
+  const openSlide = useCallback(() => setSlideOverOpen(true), [])
+  const closeSlide = useCallback(() => setSlideOverOpen(false), [])
+
+  const refreshTickets = useCallback(async () => {
+    await fetch("/api/tickets")
+      .then((res) => res.json())
+      .then((data) => setTickets(data.tickets ?? []))
+  }, [])
 
   useEffect(() => {
     if (error) toast.error(error)
@@ -120,12 +132,10 @@ export default function TicketsPage() {
             </>
           )}
         </div>
-        <Link href="/dashboard/tickets/new">
-          <Button>
+        <Button onClick={openSlide}>
             <Plus className="h-4 w-4 mr-2" />
             New Ticket
           </Button>
-        </Link>
       </div>
 
       {!loading && (
@@ -252,12 +262,10 @@ export default function TicketsPage() {
               description={hasFilters ? "No tickets match your search or filters." : "No repair tickets have been created yet."}
               action={
                 !hasFilters ? (
-                  <Link href="/dashboard/tickets/new">
-                    <Button>
+                  <Button onClick={openSlide}>
                       <Plus className="h-4 w-4 mr-2" />
                       New Ticket
                     </Button>
-                  </Link>
                 ) : undefined
               }
             />
@@ -319,6 +327,16 @@ export default function TicketsPage() {
       </Card>
       </div>
       {dialog}
+
+      <SlideOver
+        open={slideOverOpen}
+        onOpenChange={(open) => { if (!open) closeSlide() }}
+        title="New Ticket"
+        description="Create a new repair ticket."
+        gradient="tickets"
+      >
+        <CreateTicketForm onSuccess={() => { closeSlide(); refreshTickets() }} onCancel={closeSlide} />
+      </SlideOver>
     </PageTransition>
   )
 }
