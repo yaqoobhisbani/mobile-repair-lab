@@ -58,8 +58,8 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
     <div className="flex h-full flex-col gap-4 py-4">
       <div className="flex items-center justify-between px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            MRL
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm">
+            {shopName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 3)}
           </div>
           <span className="font-semibold">{shopName}</span>
         </Link>
