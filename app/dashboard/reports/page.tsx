@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { TrendingUp, Wrench, PackageCheck, CheckCircle2, Download, Calendar } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TrendingUp, Wrench, PackageCheck, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts"
 import { DatePicker } from "@/components/date-picker"
+import { MonthPicker } from "@/components/month-picker"
 
 interface ProfitEntry {
   period: string
@@ -31,12 +31,6 @@ function formatPeriod(dateStr: string, period: string) {
   const d = new Date(dateStr)
   if (period === "yearly") return d.getFullYear().toString()
   if (period === "monthly") return d.toLocaleString("default", { month: "short", year: "2-digit" })
-  if (period === "weekly") {
-    const start = new Date(d)
-    const end = new Date(d)
-    end.setDate(end.getDate() + 6)
-    return `${start.getDate()}/${start.getMonth() + 1}`
-  }
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
@@ -45,42 +39,42 @@ function formatCurrency(n: number) {
 }
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState("monthly")
-  const [dateValue, setDateValue] = useState<Date>(new Date())
-  const [monthValue, setMonthValue] = useState(() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-  })
-  const [yearValue, setYearValue] = useState(() => String(new Date().getFullYear()))
+  const [datePeriod, setDatePeriod] = useState("monthly")
+  const [referenceDate, setReferenceDate] = useState(new Date())
   const [data, setData] = useState<ProfitEntry[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const getDateRange = useCallback(() => {
+    const now = referenceDate
+    switch (datePeriod) {
+      case "daily": {
+        const d = now.toISOString().split("T")[0]
+        return { from: d, to: d }
+      }
+      case "monthly": {
+        const y = now.getFullYear()
+        const m = String(now.getMonth() + 1).padStart(2, "0")
+        const lastDay = new Date(y, now.getMonth() + 1, 0).getDate()
+        return { from: `${y}-${m}-01`, to: `${y}-${m}-${String(lastDay).padStart(2, "0")}` }
+      }
+      case "yearly":
+        return { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` }
+      default:
+        return null
+    }
+  }, [datePeriod, referenceDate])
+
   const buildUrl = useCallback(() => {
-    const params = new URLSearchParams({ period })
-    const dateStr = dateValue ? dateValue.toISOString().split("T")[0] : ""
-    if (period === "daily" && dateStr) {
-      params.set("from", dateStr)
-      params.set("to", dateStr)
-    } else if (period === "weekly" && dateStr) {
-      const d = new Date(dateValue)
-      const start = new Date(d)
-      start.setDate(d.getDate() - d.getDay())
-      const end = new Date(start)
-      end.setDate(start.getDate() + 6)
-      params.set("from", start.toISOString().split("T")[0])
-      params.set("to", end.toISOString().split("T")[0])
-    } else if (period === "monthly" && monthValue) {
-      params.set("from", `${monthValue}-01`)
-      const [y, m] = monthValue.split("-").map(Number)
-      const lastDay = new Date(y, m, 0).getDate()
-      params.set("to", `${monthValue}-${String(lastDay).padStart(2, "0")}`)
-    } else if (period === "yearly" && yearValue) {
-      params.set("from", `${yearValue}-01-01`)
-      params.set("to", `${yearValue}-12-31`)
+    const range = getDateRange()
+    const apiPeriod = datePeriod === "all" ? "yearly" : datePeriod
+    const params = new URLSearchParams({ period: apiPeriod })
+    if (range) {
+      params.set("from", range.from)
+      params.set("to", range.to)
     }
     return `/api/reports/profit?${params.toString()}`
-  }, [period, dateValue, monthValue, yearValue])
+  }, [getDateRange, datePeriod])
 
   useEffect(() => {
     setLoading(true)
@@ -99,12 +93,12 @@ export default function ReportsPage() {
 
   const chartData = useMemo(() => {
     return [...data].reverse().map((d) => ({
-      label: formatPeriod(d.period, period),
+      label: formatPeriod(d.period, datePeriod),
       "Parts Profit": d.partsProfit,
       "Labor Profit": d.laborProfit,
       total: d.totalProfit,
     }))
-  }, [data, period])
+  }, [data, datePeriod])
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null
@@ -120,21 +114,6 @@ export default function ReportsPage() {
     )
   }
 
-  function exportCSV() {
-    if (data.length === 0) return
-    const rows = [["Period", "Parts Profit", "Labor Profit", "Total Profit", "Tickets"].join(",")]
-    data.forEach((d) => {
-      rows.push([formatPeriod(d.period, period), d.partsProfit, d.laborProfit, d.totalProfit, d.ticketCount].join(","))
-    })
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `profit-report-${period}-${new Date().toISOString().split("T")[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   return (
     <PageTransition>
     <div className="space-y-6">
@@ -144,48 +123,34 @@ export default function ReportsPage() {
           <p className="text-muted-foreground">Track earnings from labor and parts.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-            {["weekly", "monthly", "yearly"].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  period === p ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
-              </button>
-            ))}
-            <button
-              onClick={() => setPeriod("daily")}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                period === "daily" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
+          <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()) }}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Today</SelectItem>
+              <SelectItem value="monthly">This Month</SelectItem>
+              <SelectItem value="yearly">This Year</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+            </SelectContent>
+          </Select>
+          {datePeriod === "daily" && (
+            <DatePicker value={referenceDate} onChange={(d) => { if (d) setReferenceDate(d) }} className="h-9 w-40" />
+          )}
+          {datePeriod === "monthly" && (
+            <MonthPicker value={referenceDate} onChange={(d) => setReferenceDate(d)} className="h-9 w-40" />
+          )}
+          {datePeriod === "yearly" && (
+            <select
+              value={referenceDate.getFullYear()}
+              onChange={(e) => setReferenceDate(new Date(Number(e.target.value), 0, 1))}
+              className="h-9 text-sm rounded-md border border-input bg-transparent px-3 w-28"
             >
-              <Calendar className="h-3.5 w-3.5 inline mr-1" />
-              Custom
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {period === "daily" && (
-              <DatePicker value={dateValue} onChange={(d) => d && setDateValue(d)} className="w-36 h-9" />
-            )}
-            {period === "weekly" && (
-              <DatePicker value={dateValue} onChange={(d) => d && setDateValue(d)} className="w-36 h-9" />
-            )}
-            {period === "monthly" && (
-              <Input type="month" value={monthValue} onChange={(e) => setMonthValue(e.target.value)} className="w-36 h-9" />
-            )}
-            {period === "yearly" && (
-              <Input type="number" min="2000" max="2099" value={yearValue} onChange={(e) => setYearValue(e.target.value)} className="w-28 h-9" />
-            )}
-
-            <Button variant="outline" size="sm" onClick={exportCSV} disabled={data.length === 0} title="Download CSV">
-              <Download className="h-3.5 w-3.5 mr-1.5" />
-              Export
-            </Button>
-          </div>
+              {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -288,7 +253,7 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Breakdown</CardTitle>
-                <CardDescription>Detailed profit data by {period}.</CardDescription>
+                <CardDescription>Detailed profit data by {datePeriod === "daily" ? "day" : datePeriod === "monthly" ? "month" : "year"}.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -305,7 +270,7 @@ export default function ReportsPage() {
                     <tbody>
                       {data.map((row) => (
                         <tr key={row.period} className="border-b last:border-0">
-                          <td className="py-3 font-medium">{formatPeriod(row.period, period)}</td>
+                          <td className="py-3 font-medium">{formatPeriod(row.period, datePeriod)}</td>
                           <td className="py-3 text-right text-amber-600">{formatCurrency(row.partsProfit)}</td>
                           <td className="py-3 text-right text-blue-600">{formatCurrency(row.laborProfit)}</td>
                           <td className="py-3 text-right font-medium text-emerald-600">{formatCurrency(row.totalProfit)}</td>

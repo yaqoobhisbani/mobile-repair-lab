@@ -44,7 +44,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, type, balance, description } = body
+    const { name, type, description } = body
 
     if (type && !["bank", "cash"].includes(type)) {
       return NextResponse.json({ error: "Invalid account type" }, { status: 400 })
@@ -55,7 +55,6 @@ export async function PUT(
       .set({
         name: name?.trim() || undefined,
         type: type || undefined,
-        balance: balance !== undefined ? String(balance) : undefined,
         description: description !== undefined ? (description?.trim() || null) : undefined,
       })
       .where(eq(accounts.id, numericId))
