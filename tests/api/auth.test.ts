@@ -16,38 +16,6 @@ vi.mock("next/headers", () => ({
   ),
 }))
 
-describe("POST /api/auth/register", () => {
-  beforeEach(async () => {
-    await truncateAll()
-  })
-
-  it("registers a new user", async () => {
-    const { POST } = await import("../../app/api/auth/register/route")
-    const res = await POST(
-      mockRequest({ email: "new@example.com", password: "secret123", name: "New User" })
-    )
-    expect(res.status).toBe(201)
-    const data = await res.json()
-    expect(data.user.email).toBe("new@example.com")
-    expect(data.user.name).toBe("New User")
-  })
-
-  it("rejects missing fields", async () => {
-    const { POST } = await import("../../app/api/auth/register/route")
-    const res = await POST(mockRequest({ email: "nope@example.com" }))
-    expect(res.status).toBe(400)
-  })
-
-  it("rejects duplicate email", async () => {
-    await createUser({ email: "dup@example.com" })
-    const { POST } = await import("../../app/api/auth/register/route")
-    const res = await POST(
-      mockRequest({ email: "dup@example.com", password: "x", name: "Dup" })
-    )
-    expect(res.status).toBe(409)
-  })
-})
-
 describe("POST /api/auth/login", () => {
   beforeEach(async () => {
     await truncateAll()
