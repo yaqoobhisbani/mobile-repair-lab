@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 
-interface UpdateInventoryInput {
+export interface UpdateInventoryInput {
   id: number
   partName?: string
   compatibility?: string | null
@@ -10,6 +10,7 @@ interface UpdateInventoryInput {
   lowStockThreshold?: number | null
   costPrice?: number | null
   sellingPrice?: number | null
+  accountId?: number | null
 }
 
 export function useUpdateInventoryItem() {
@@ -24,6 +25,7 @@ export function useUpdateInventoryItem() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.inventory.detail(id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all })
     },
   })
 }

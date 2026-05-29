@@ -99,6 +99,13 @@
       "when": 1779959478638,
       "tag": "0013_sweet_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779960000000,
+      "tag": "0014_add_inventory_account_id",
+      "breakpoints": true
     }
   ]
 }

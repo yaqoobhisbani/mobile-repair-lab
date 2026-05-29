@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Loader2, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -11,6 +12,7 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { useInventoryItem } from "@/hooks/queries/use-inventory-item"
 import { useUpdateInventoryItem } from "@/hooks/mutations/use-update-inventory-item"
 import { useDeleteInventoryItem } from "@/hooks/mutations/use-delete-inventory-item"
+import { useAccounts } from "@/hooks/queries/use-accounts"
 
 interface EditInventoryFormProps {
   itemId: number
@@ -21,6 +23,7 @@ interface EditInventoryFormProps {
 export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventoryFormProps) {
   const { confirm, dialog } = useConfirm()
   const { data: item, isLoading } = useInventoryItem(itemId)
+  const { data: accounts = [] } = useAccounts()
   const updateInventoryItem = useUpdateInventoryItem()
   const deleteInventoryItem = useDeleteInventoryItem()
 
@@ -33,6 +36,7 @@ export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventory
     lowStockThreshold: "",
     costPrice: "",
     sellingPrice: "",
+    accountId: "",
   })
 
   useEffect(() => {
@@ -45,6 +49,7 @@ export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventory
         lowStockThreshold: item.lowStockThreshold !== null ? String(item.lowStockThreshold) : "",
         costPrice: item.costPrice ?? "",
         sellingPrice: item.sellingPrice ?? "",
+        accountId: item.accountId ? String(item.accountId) : "",
       })
     }
   }, [item])
@@ -53,9 +58,26 @@ export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventory
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
   }
 
+  const increase = useMemo(() => {
+    if (!item) return 0
+    const newQty = Number(formData.stockQty || 0)
+    return Math.max(0, newQty - item.stockQty)
+  }, [item, formData.stockQty])
+
+  const extraCost = useMemo(() => {
+    const cost = Number(formData.costPrice || 0)
+    return increase * cost
+  }, [increase, formData.costPrice])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
+
+    if (extraCost > 0 && !formData.accountId) {
+      toast.error("Select an account to deduct the additional stock cost from")
+      setSaving(false)
+      return
+    }
 
     updateInventoryItem.mutate(
       {
@@ -66,6 +88,7 @@ export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventory
         lowStockThreshold: formData.lowStockThreshold ? Number(formData.lowStockThreshold) : null,
         costPrice: formData.costPrice ? Number(formData.costPrice) : null,
         sellingPrice: formData.sellingPrice ? Number(formData.sellingPrice) : null,
+        accountId: formData.accountId ? Number(formData.accountId) : null,
       },
       {
         onSuccess: () => {
@@ -143,6 +166,30 @@ export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventory
             <Label htmlFor="sellingPrice">Selling Price (Rs.)</Label>
             <Input id="sellingPrice" type="number" min="0" step="0.01" value={formData.sellingPrice} onChange={handleChange} />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="accountId">Pay from Account</Label>
+          <Select
+            value={formData.accountId}
+            onValueChange={(v) => setFormData((prev) => ({ ...prev, accountId: v }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select account for payment" />
+            </SelectTrigger>
+            <SelectContent>
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name} (Rs. {parseFloat(a.balance).toLocaleString()})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {extraCost > 0 && formData.accountId && (
+            <p className="text-xs text-muted-foreground">
+              Rs. {extraCost.toLocaleString()} will be deducted for {increase} additional unit{increase > 1 ? "s" : ""}.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t">

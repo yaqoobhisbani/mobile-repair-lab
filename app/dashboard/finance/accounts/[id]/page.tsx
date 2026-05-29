@@ -244,6 +244,8 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                             <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800">Transfer Out</Badge>
                           ) : t.referenceType === "transfer" && t.type === "credit" ? (
                             <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800">Transfer In</Badge>
+                          ) : t.referenceType === "inventory_purchase" ? (
+                            <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800">Stock Purchase</Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">Opening</Badge>
                           )}

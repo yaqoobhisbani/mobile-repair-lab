@@ -6,7 +6,7 @@ export async function insertTransaction(
   type: "credit" | "debit",
   amount: number,
   description: string,
-  referenceType: "ticket" | "expense" | "opening_balance" | "top_up" | "sale" | "transfer",
+  referenceType: "ticket" | "expense" | "opening_balance" | "top_up" | "sale" | "transfer" | "inventory_purchase",
   referenceId?: string,
   tx?: any
 ) {

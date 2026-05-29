@@ -4,10 +4,12 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
 import { useCreateInventoryItem } from "@/hooks/mutations/use-create-inventory-item"
+import { useAccounts } from "@/hooks/queries/use-accounts"
 
 interface CreateInventoryFormProps {
   onSuccess: () => void
@@ -16,6 +18,7 @@ interface CreateInventoryFormProps {
 
 export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryFormProps) {
   const createInventoryItem = useCreateInventoryItem()
+  const { data: accounts = [] } = useAccounts()
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     partName: "",
@@ -25,6 +28,7 @@ export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryForm
     lowStockThreshold: "",
     costPrice: "",
     sellingPrice: "",
+    accountId: "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,15 +39,25 @@ export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryForm
     e.preventDefault()
     setSaving(true)
 
+    const qty = formData.stockQty ? Number(formData.stockQty) : 0
+    const cost = formData.costPrice ? Number(formData.costPrice) : 0
+
+    if (qty > 0 && cost > 0 && !formData.accountId) {
+      toast.error("Select an account to deduct the purchase cost from")
+      setSaving(false)
+      return
+    }
+
     createInventoryItem.mutate(
       {
         partName: formData.partName,
         sku: formData.sku,
         compatibility: formData.compatibility || undefined,
-        stockQty: formData.stockQty ? Number(formData.stockQty) : undefined,
+        stockQty: qty || undefined,
         lowStockThreshold: formData.lowStockThreshold ? Number(formData.lowStockThreshold) : undefined,
-        costPrice: formData.costPrice ? Number(formData.costPrice) : undefined,
+        costPrice: cost || undefined,
         sellingPrice: formData.sellingPrice ? Number(formData.sellingPrice) : undefined,
+        accountId: formData.accountId ? Number(formData.accountId) : undefined,
       },
       {
         onSuccess: () => {
@@ -60,6 +74,10 @@ export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryForm
       }
     )
   }
+
+  const qty = Number(formData.stockQty || 0)
+  const cost = Number(formData.costPrice || 0)
+  const showAccountField = qty > 0 && cost > 0
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,6 +119,30 @@ export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryForm
           <Input id="sellingPrice" type="number" min="0" step="0.01" value={formData.sellingPrice} onChange={handleChange} />
         </div>
       </div>
+
+      {showAccountField && (
+        <div className="space-y-2">
+          <Label htmlFor="accountId">Pay from Account *</Label>
+          <Select
+            value={formData.accountId}
+            onValueChange={(v) => setFormData((prev) => ({ ...prev, accountId: v }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select account for payment" />
+            </SelectTrigger>
+            <SelectContent>
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name} (Rs. {parseFloat(a.balance).toLocaleString()})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Rs. {(qty * cost).toLocaleString()} will be deducted from this account.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-3 pt-4 border-t">
         <Button type="button" variant="outline" disabled={saving} onClick={onCancel}>Cancel</Button>

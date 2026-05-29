@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { inventory } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { inventory, accounts } from "@/db/schema"
+import { eq, sql } from "drizzle-orm"
+import { insertTransaction } from "@/db/transactions"
 
 export async function GET(
   _request: Request,
@@ -53,26 +54,68 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { partName, compatibility, stockQty, lowStockThreshold, costPrice, sellingPrice } = body
+    const { partName, compatibility, stockQty, lowStockThreshold, costPrice, sellingPrice, accountId } = body
 
-    const [item] = await db
-      .update(inventory)
-      .set({
-        partName: partName || undefined,
-        compatibility: compatibility !== undefined ? compatibility : undefined,
-        stockQty: stockQty !== undefined ? Number(stockQty) : undefined,
-        lowStockThreshold: lowStockThreshold !== undefined ? Number(lowStockThreshold) : undefined,
-        costPrice: costPrice !== undefined ? String(costPrice) : undefined,
-        sellingPrice: sellingPrice !== undefined ? String(sellingPrice) : undefined,
-      })
+    const [current] = await db
+      .select()
+      .from(inventory)
       .where(eq(inventory.id, numericId))
-      .returning()
+      .limit(1)
 
-    if (!item) {
+    if (!current) {
       return NextResponse.json({ error: "Part not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ item })
+    const result = await db.transaction(async (tx) => {
+      const updateData: Record<string, any> = {}
+      if (partName !== undefined) updateData.partName = partName
+      if (compatibility !== undefined) updateData.compatibility = compatibility
+      if (lowStockThreshold !== undefined) updateData.lowStockThreshold = Number(lowStockThreshold)
+      if (costPrice !== undefined) updateData.costPrice = String(costPrice)
+      if (sellingPrice !== undefined) updateData.sellingPrice = String(sellingPrice)
+      if (accountId !== undefined) updateData.accountId = accountId ? Number(accountId) : null
+      if (stockQty !== undefined) updateData.stockQty = Number(stockQty)
+
+      const [item] = await tx
+        .update(inventory)
+        .set(updateData)
+        .where(eq(inventory.id, numericId))
+        .returning()
+
+      const newQty = stockQty !== undefined ? Number(stockQty) : Number(current.stockQty)
+      const oldQty = Number(current.stockQty)
+      const increase = newQty - oldQty
+
+      if (increase > 0) {
+        const resolvedCostPrice = costPrice !== undefined ? parseFloat(String(costPrice)) : parseFloat(String(current.costPrice ?? "0"))
+        const resolvedAccountId = accountId !== undefined
+          ? (accountId ? Number(accountId) : null)
+          : current.accountId
+
+        if (resolvedCostPrice > 0 && resolvedAccountId) {
+          const totalCost = increase * resolvedCostPrice
+
+          await tx
+            .update(accounts)
+            .set({ balance: sql`${accounts.balance} - ${totalCost}` })
+            .where(eq(accounts.id, resolvedAccountId))
+
+          await insertTransaction(
+            resolvedAccountId,
+            "debit",
+            totalCost,
+            `Purchased ${increase}x ${item.partName} (SKU: ${item.sku})`,
+            "inventory_purchase",
+            String(item.id),
+            tx,
+          )
+        }
+      }
+
+      return item
+    })
+
+    return NextResponse.json({ item: result })
   } catch {
     return NextResponse.json({ error: "Failed to update part" }, { status: 500 })
   }

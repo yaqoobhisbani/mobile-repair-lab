@@ -61,6 +61,7 @@ export const inventory = pgTable("inventory", {
   lowStockThreshold: integer("low_stock_threshold").default(0),
   costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
   sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }),
+  accountId: integer("account_id").references(() => accounts.id),
 })
 
 export const accountTypeEnum = pgEnum("account_type", ["bank", "cash"])

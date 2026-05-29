@@ -11,6 +11,7 @@ export interface InventoryItem {
   lowStockThreshold: number | null
   costPrice: string | null
   sellingPrice: string | null
+  accountId: number | null
 }
 
 export function useInventoryItem(id: number) {
