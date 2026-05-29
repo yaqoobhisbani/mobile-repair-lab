@@ -239,10 +239,10 @@ export default function DashboardOverview() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    <AnimatedCounter to={stats.todaySales} />
+                    Rs. <PrivacyAmount><AnimatedCounter to={stats.todayRevenue} decimals={2} /></PrivacyAmount>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Rs. <PrivacyAmount><AnimatedCounter to={stats.todayRevenue} decimals={2} /></PrivacyAmount>
+                    <AnimatedCounter to={stats.todaySales} /> sale{stats.todaySales !== 1 ? "s" : ""} today
                   </p>
                 </CardContent>
               </Card>
