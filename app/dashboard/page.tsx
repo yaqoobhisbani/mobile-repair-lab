@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -150,7 +151,7 @@ export default function DashboardOverview() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    Rs. <AnimatedCounter to={stats.totalBalance} />
+                    Rs. <PrivacyAmount><AnimatedCounter to={stats.totalBalance} /></PrivacyAmount>
                   </div>
                   <p className="text-xs text-muted-foreground">Across {accounts?.length ?? 0} accounts</p>
                 </CardContent>
@@ -166,7 +167,7 @@ export default function DashboardOverview() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-destructive">
-                    Rs. <AnimatedCounter to={stats.monthExpenses} />
+                    Rs. <PrivacyAmount><AnimatedCounter to={stats.monthExpenses} /></PrivacyAmount>
                   </div>
                   <p className="text-xs text-muted-foreground">{stats.monthExpenseCount} expense entries this month</p>
                 </CardContent>

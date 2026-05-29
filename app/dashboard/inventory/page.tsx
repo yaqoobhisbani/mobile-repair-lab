@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, AlertTriangle, X, Pencil, Trash2, Package, DollarSign, XCircle, Boxes } from "lucide-react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { useConfirm } from "@/hooks/use-confirm"
@@ -152,7 +153,7 @@ export default function InventoryPage() {
                     <DollarSign className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold">                    <AnimatedCounter to={Math.round(stats.totalInvestment)} prefix="Rs. " /></p>
+                    <p className="text-2xl font-bold"><PrivacyAmount><AnimatedCounter to={Math.round(stats.totalInvestment)} prefix="Rs. " /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -165,7 +166,7 @@ export default function InventoryPage() {
                     <DollarSign className="h-4 w-4 text-cyan-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold"><AnimatedCounter to={Math.round(stats.totalValue)} prefix="Rs. " /></p>
+                    <p className="text-2xl font-bold"><PrivacyAmount><AnimatedCounter to={Math.round(stats.totalValue)} prefix="Rs. " /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -306,8 +307,8 @@ export default function InventoryPage() {
                                 {item.stockQty}
                               </Badge>
                             </TableCell>
-                            <TableCell>{item.costPrice ? `Rs. ${Number(item.costPrice).toFixed(2)}` : "—"}</TableCell>
-                            <TableCell>{item.sellingPrice ? `Rs. ${Number(item.sellingPrice).toFixed(2)}` : "—"}</TableCell>
+                            <TableCell>{item.costPrice ? <PrivacyAmount>Rs. {Number(item.costPrice).toFixed(2)}</PrivacyAmount> : "—"}</TableCell>
+                            <TableCell>{item.sellingPrice ? <PrivacyAmount>Rs. {Number(item.sellingPrice).toFixed(2)}</PrivacyAmount> : "—"}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <Button

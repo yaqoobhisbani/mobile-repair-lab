@@ -13,6 +13,7 @@ import { PageTransition } from "@/components/page-transition"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { DatePicker } from "@/components/date-picker"
 import { MonthPicker } from "@/components/month-picker"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns"
 import { useAccount } from "@/hooks/queries/use-account"
 import { useTransactions } from "@/hooks/queries/use-transactions"
@@ -132,7 +133,7 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
               <CardTitle className="text-sm font-medium text-muted-foreground">Current Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">Rs. {parseFloat(account.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold">Rs. <PrivacyAmount>{parseFloat(account.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}</PrivacyAmount></p>
             </CardContent>
           </Card>
           <Card>
@@ -140,7 +141,7 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Credits</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-emerald-600 inline-flex items-center gap-1"><ArrowUpRight className="h-5 w-5" />Rs. {totalCredits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold text-emerald-600 inline-flex items-center gap-1"><ArrowUpRight className="h-5 w-5" />Rs. <PrivacyAmount>{totalCredits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</PrivacyAmount></p>
             </CardContent>
           </Card>
           <Card>
@@ -148,7 +149,7 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Debits</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-rose-600 inline-flex items-center gap-1"><ArrowDownRight className="h-5 w-5" />Rs. {totalDebits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold text-rose-600 inline-flex items-center gap-1"><ArrowDownRight className="h-5 w-5" />Rs. <PrivacyAmount>{totalDebits.toLocaleString("en-US", { minimumFractionDigits: 2 })}</PrivacyAmount></p>
             </CardContent>
           </Card>
           <Card>
@@ -250,7 +251,7 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                             ) : (
                               <ArrowDownRight className="h-3.5 w-3.5" />
                             )}
-                            Rs. {parseFloat(t.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                            Rs. <PrivacyAmount>{parseFloat(t.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</PrivacyAmount>
                           </span>
                         </td>
                       </tr>

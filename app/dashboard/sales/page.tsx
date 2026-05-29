@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { Plus, Search, X, Eye, Trash2, Receipt } from "lucide-react"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
@@ -132,7 +133,7 @@ export default function SalesPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-1">
-                    <p className="text-2xl font-bold">Rs. <AnimatedCounter to={stats.totalRevenue} decimals={2} /></p>
+                    <p className="text-2xl font-bold">Rs. <PrivacyAmount><AnimatedCounter to={stats.totalRevenue} decimals={2} /></PrivacyAmount></p>
                     <p className="text-xs text-muted-foreground">All time</p>
                   </CardContent>
                 </Card>
@@ -145,8 +146,8 @@ export default function SalesPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-1">
-                    <p className="text-2xl font-bold"><AnimatedCounter to={stats.thisMonthSales} /></p>
-                    <p className="text-xs text-muted-foreground">Rs. <AnimatedCounter to={stats.thisMonthRevenue} decimals={2} /></p>
+                    <p className="text-2xl font-bold"><PrivacyAmount><AnimatedCounter to={stats.thisMonthSales} /></PrivacyAmount></p>
+                    <p className="text-xs text-muted-foreground">Rs. <PrivacyAmount><AnimatedCounter to={stats.thisMonthRevenue} decimals={2} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -158,8 +159,8 @@ export default function SalesPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">This Year</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-1">
-                    <p className="text-2xl font-bold"><AnimatedCounter to={stats.thisYearSales} /></p>
-                    <p className="text-xs text-muted-foreground">Rs. <AnimatedCounter to={stats.thisYearRevenue} decimals={2} /></p>
+                    <p className="text-2xl font-bold"><PrivacyAmount><AnimatedCounter to={stats.thisYearSales} /></PrivacyAmount></p>
+                    <p className="text-xs text-muted-foreground">Rs. <PrivacyAmount><AnimatedCounter to={stats.thisYearRevenue} decimals={2} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -232,7 +233,7 @@ export default function SalesPage() {
                           </TableCell>
                           <TableCell>{sale.customerName || "\u2014"}</TableCell>
                           <TableCell>{sale.paymentAccountName || "\u2014"}</TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(sale.totalAmount)}</TableCell>
+                          <TableCell className="text-right font-medium"><PrivacyAmount>{formatCurrency(sale.totalAmount)}</PrivacyAmount></TableCell>
                           <TableCell>{formatDate(sale.createdAt)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">

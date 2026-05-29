@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { usePrivacyMode } from "@/lib/privacy-mode-context"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +38,8 @@ import {
   Receipt,
   Loader2,
   Ticket,
+  Eye,
+  EyeOff,
 } from "lucide-react"
 
 interface NavItem {
@@ -94,6 +97,7 @@ export function DashboardHeader() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
+  const { privacyMode, toggle: togglePrivacy } = usePrivacyMode()
   const crumbs = useBreadcrumbs(pathname)
   const [commandOpen, setCommandOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -237,6 +241,10 @@ export function DashboardHeader() {
               <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={togglePrivacy}>
+                {privacyMode ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
+                {privacyMode ? "Privacy Mode On" : "Privacy Mode Off"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

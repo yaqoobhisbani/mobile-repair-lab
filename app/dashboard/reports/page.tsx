@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cart
 import { DatePicker } from "@/components/date-picker"
 import { MonthPicker } from "@/components/month-picker"
 import { useProfitReport } from "@/hooks/queries/use-profit-report"
+import { PrivacyAmount } from "@/components/privacy-amount"
 
 function formatPeriod(dateStr: string, period: string) {
   const d = new Date(dateStr)
@@ -77,7 +78,7 @@ export default function ReportsPage() {
         <p className="text-sm font-medium mb-1">{label}</p>
         {payload.map((entry: any, i: number) => (
           <p key={i} className="text-xs" style={{ color: entry.color }}>
-            {entry.name}: {formatCurrency(entry.value)}
+            {entry.name}: <PrivacyAmount>{formatCurrency(entry.value)}</PrivacyAmount>
           </p>
         ))}
       </div>
@@ -145,7 +146,7 @@ export default function ReportsPage() {
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-emerald-600">{formatCurrency(data?.summary?.totalProfit ?? 0)}</p>
+                    <p className="text-2xl font-bold text-emerald-600"><PrivacyAmount>{formatCurrency(data?.summary?.totalProfit ?? 0)}</PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -158,7 +159,7 @@ export default function ReportsPage() {
                     <PackageCheck className="h-4 w-4 text-blue-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold">{formatCurrency(data?.summary?.totalPartsProfit ?? 0)}</p>
+                    <p className="text-2xl font-bold"><PrivacyAmount>{formatCurrency(data?.summary?.totalPartsProfit ?? 0)}</PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -171,7 +172,7 @@ export default function ReportsPage() {
                     <Wrench className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold">{formatCurrency(data?.summary?.totalLaborProfit ?? 0)}</p>
+                    <p className="text-2xl font-bold"><PrivacyAmount>{formatCurrency(data?.summary?.totalLaborProfit ?? 0)}</PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>

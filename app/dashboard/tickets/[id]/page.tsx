@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
 import { AddPartDialog } from "@/components/add-part-dialog"
 import { ArrowLeft, Download, Loader2, Plus, Save, Trash2 } from "lucide-react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { capitalize } from "@/lib/utils"
 import { toast } from "sonner"
 import { useConfirm } from "@/hooks/use-confirm"
@@ -161,7 +162,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       if (!draftAmountPaid || amount <= 0) {
         errors.amountPaid = "Amount paid must be greater than 0"
       } else if (amount > computeTotal()) {
-        errors.amountPaid = `Amount paid (Rs. ${amount.toFixed(2)}) exceeds total (Rs. ${computeTotal().toFixed(2)})`
+        errors.amountPaid = `Amount paid (Rs. ...) exceeds total (Rs. ...)`
       }
     }
 
@@ -407,14 +408,14 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   <p className="text-xs text-destructive mt-1">{fieldErrors.amountPaid}</p>
                 ) : (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Remaining: Rs. {Math.max(0, computeTotal() - parseFloat(draftAmountPaid || "0")).toFixed(2)}
+                    Remaining: <PrivacyAmount as="span">Rs. {Math.max(0, computeTotal() - parseFloat(draftAmountPaid || "0")).toFixed(2)}</PrivacyAmount>
                   </p>
                 )}
               </div>
             )}
             {draftPaymentStatus === "paid" && (
               <p className="text-xs text-muted-foreground">
-                Full amount (Rs. {computeTotal().toFixed(2)}) will be applied as paid.
+                Full amount (<PrivacyAmount as="span">Rs. {computeTotal().toFixed(2)}</PrivacyAmount>) will be applied as paid.
               </p>
             )}
             </CardContent>
@@ -508,7 +509,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     <TableCell className="font-medium">{item.partName}</TableCell>
                     <TableCell>{item.sku}</TableCell>
                     <TableCell>{item.quantityUsed}</TableCell>
-                    <TableCell>{item.sellingPrice ? `Rs. ${item.sellingPrice}` : "—"}</TableCell>
+                    <TableCell>{item.sellingPrice ? <PrivacyAmount>Rs. {item.sellingPrice}</PrivacyAmount> : "—"}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => removePart(item.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />

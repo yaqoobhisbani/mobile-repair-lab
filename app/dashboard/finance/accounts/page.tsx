@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { Plus, Search, X, Pencil, Trash2, Eye, Landmark, Wallet, Building2, Banknote, ArrowUp } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -150,7 +151,7 @@ export default function AccountsPage() {
                     <Wallet className="h-4 w-4 text-emerald-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-emerald-600">Rs. <AnimatedCounter to={stats.totalBalance} decimals={0} /></p>
+                    <p className="text-2xl font-bold text-emerald-600">Rs. <PrivacyAmount><AnimatedCounter to={stats.totalBalance} decimals={0} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -163,7 +164,7 @@ export default function AccountsPage() {
                     <Building2 className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-violet-600">Rs. <AnimatedCounter to={stats.bankBalance} decimals={0} /></p>
+                    <p className="text-2xl font-bold text-violet-600">Rs. <PrivacyAmount><AnimatedCounter to={stats.bankBalance} decimals={0} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -176,7 +177,7 @@ export default function AccountsPage() {
                     <Banknote className="h-4 w-4 text-amber-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-amber-600">Rs. <AnimatedCounter to={stats.cashBalance} decimals={0} /></p>
+                    <p className="text-2xl font-bold text-amber-600">Rs. <PrivacyAmount><AnimatedCounter to={stats.cashBalance} decimals={0} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -251,7 +252,7 @@ export default function AccountsPage() {
                       <TableCell className="font-medium">{account.name}</TableCell>
                       <TableCell>{typeLabels[account.type] || account.type}</TableCell>
                       <TableCell className="text-muted-foreground">{account.description || "—"}</TableCell>
-                      <TableCell className="text-right font-medium">Rs. {parseFloat(account.balance).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">Rs. <PrivacyAmount>{parseFloat(account.balance).toLocaleString()}</PrivacyAmount></TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button

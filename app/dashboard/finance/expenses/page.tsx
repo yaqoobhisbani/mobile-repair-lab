@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { useConfirm } from "@/hooks/use-confirm"
 import { SlideOver } from "@/components/slide-over"
 import { CreateExpenseForm } from "@/components/forms/create-expense-form"
@@ -190,7 +191,7 @@ export default function ExpensesPage() {
                     <CalendarDays className="h-4 w-4 text-rose-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-rose-600">Rs. <AnimatedCounter to={stats.todayTotal} /></p>
+                    <p className="text-2xl font-bold text-rose-600">Rs. <PrivacyAmount><AnimatedCounter to={stats.todayTotal} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -203,7 +204,7 @@ export default function ExpensesPage() {
                     <CalendarRange className="h-4 w-4 text-orange-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-orange-600">Rs. <AnimatedCounter to={stats.monthTotal} /></p>
+                    <p className="text-2xl font-bold text-orange-600">Rs. <PrivacyAmount><AnimatedCounter to={stats.monthTotal} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -216,7 +217,7 @@ export default function ExpensesPage() {
                     <Clock className="h-4 w-4 text-blue-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-blue-600">Rs. <AnimatedCounter to={stats.allTime} /></p>
+                    <p className="text-2xl font-bold text-blue-600">Rs. <PrivacyAmount><AnimatedCounter to={stats.allTime} /></PrivacyAmount></p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -357,7 +358,7 @@ export default function ExpensesPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{expense.accountName || "—"}</TableCell>
                       <TableCell className="text-right font-medium text-destructive">
-                        - Rs. {parseFloat(expense.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        - Rs. <PrivacyAmount>{parseFloat(expense.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</PrivacyAmount>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
