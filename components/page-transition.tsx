@@ -31,7 +31,7 @@ const itemVariants: Variants = {
 
 export function StaggerContainer({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <motion.div className={className} initial="hidden" animate="visible" variants={containerVariants}>
+    <motion.div className={`min-w-0 ${className ?? ""}`} initial="hidden" animate="visible" variants={containerVariants}>
       {children}
     </motion.div>
   )
