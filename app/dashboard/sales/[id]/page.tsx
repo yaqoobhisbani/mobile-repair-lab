@@ -85,14 +85,14 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
       <Card className="print:shadow-none print:border-none print:bg-transparent">
         <CardContent className="p-8 print:p-0">
           <div id="receipt-content" className="space-y-8">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold">{s.shopName}</h2>
                 <p className="text-sm text-muted-foreground">{addressLine1}</p>
                 {addressLine2 && <p className="text-sm text-muted-foreground">{addressLine2}</p>}
                 <p className="text-sm text-muted-foreground">Phone: {s.shopPhone}</p>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <h3 className="text-lg font-semibold">Receipt</h3>
                 <p className="text-sm text-muted-foreground">{sale.id}</p>
               </div>
@@ -100,7 +100,7 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
 
             <Separator />
 
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
                 <p className="text-sm font-medium mb-1">Sold To:</p>
                 <p className="font-medium">{sale.customerName || "Walk-in Customer"}</p>
@@ -108,15 +108,16 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
                   <p className="text-sm text-muted-foreground">{sale.customerPhone}</p>
                 )}
               </div>
-              <div className="text-right text-sm text-muted-foreground">
+              <div className="text-left sm:text-right text-sm text-muted-foreground">
                 <p>Date: {formatDateTime(sale.createdAt)}</p>
-                <p className="mt-1">Account: {sale.paymentAccountName || "\u2014"}</p>
+                <p className="mt-1">Account: {sale.paymentAccountName || "—"}</p>
                 <p>Type: {sale.paymentAccountType === "cash" ? "Cash" : "Bank Transfer"}</p>
               </div>
             </div>
 
             <Separator />
 
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
@@ -142,9 +143,10 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
                 ))}
               </tbody>
             </table>
+            </div>
 
             <div className="flex justify-end">
-              <div className="w-64 space-y-2">
+              <div className="w-full sm:w-64 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>{sym} {subtotal.toFixed(2)}</span>

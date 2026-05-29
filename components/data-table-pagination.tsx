@@ -51,19 +51,19 @@ export function DataTablePagination({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
         {Array.from({ length: totalPages }, (_, i) => i + 1)
           .filter((page) => {
-            if (totalPages <= 7) return true
+            if (totalPages <= 5) return true
             if (page === 1 || page === totalPages) return true
             if (Math.abs(page - currentPage) <= 1) return true
             return false
@@ -72,11 +72,11 @@ export function DataTablePagination({
             const showEllipsis = idx > 0 && page - arr[idx - 1] > 1
             return (
               <span key={page} className="flex items-center">
-                {showEllipsis && <span className="px-1">…</span>}
+                {showEllipsis && <span className="px-0.5 sm:px-1">…</span>}
                 <Button
                   variant={page === currentPage ? "default" : "outline"}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 sm:h-8 sm:w-8"
                   onClick={() => onPageChange(page)}
                 >
                   {page}
@@ -87,11 +87,11 @@ export function DataTablePagination({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
       </div>
     </div>

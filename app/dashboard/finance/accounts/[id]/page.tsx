@@ -166,9 +166,9 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <CardTitle>Transaction History</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()); setPage(1) }}>
-                  <SelectTrigger className="w-28 h-8">
+                  <SelectTrigger className="w-24 sm:w-28 h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -179,16 +179,16 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                   </SelectContent>
                 </Select>
                 {datePeriod === "daily" && (
-                  <DatePicker value={referenceDate} onChange={(d) => { if (d) setReferenceDate(d) }} className="h-8 w-36" />
+                  <DatePicker value={referenceDate} onChange={(d) => { if (d) setReferenceDate(d) }} className="h-8 w-32 sm:w-36" />
                 )}
                 {datePeriod === "monthly" && (
-                  <MonthPicker value={referenceDate} onChange={(d) => setReferenceDate(d)} className="h-8 w-36" />
+                  <MonthPicker value={referenceDate} onChange={(d) => setReferenceDate(d)} className="h-8 w-32 sm:w-36" />
                 )}
                 {datePeriod === "yearly" && (
                   <select
                     value={referenceDate.getFullYear()}
                     onChange={(e) => setReferenceDate(new Date(Number(e.target.value), 0, 1))}
-                    className="h-8 text-sm rounded-md border border-input bg-transparent px-2 w-24"
+                    className="h-8 text-sm rounded-md border border-input bg-transparent px-2 w-20 sm:w-24"
                   >
                     {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((y) => (
                       <option key={y} value={y}>{y}</option>

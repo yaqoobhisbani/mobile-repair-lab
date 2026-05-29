@@ -216,8 +216,8 @@ export default function SalesPage() {
 
         <Card>
           <CardHeader>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="relative flex-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search by sale ID, customer name, or phone..."
@@ -226,9 +226,9 @@ export default function SalesPage() {
                   onChange={(e) => { setSearch(e.target.value); setPage(1) }}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()); setPage(1) }}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-28 sm:w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -242,21 +242,21 @@ export default function SalesPage() {
                   <DatePicker
                     value={referenceDate}
                     onChange={(d) => { if (d) setReferenceDate(d) }}
-                    className="h-9 w-40"
+                    className="h-9 w-36 sm:w-40"
                   />
                 )}
                 {datePeriod === "monthly" && (
                   <MonthPicker
                     value={referenceDate}
                     onChange={(d) => setReferenceDate(d)}
-                    className="h-9 w-40"
+                    className="h-9 w-36 sm:w-40"
                   />
                 )}
                 {datePeriod === "yearly" && (
                   <select
                     value={referenceDate.getFullYear()}
                     onChange={(e) => setReferenceDate(new Date(Number(e.target.value), 0, 1))}
-                    className="h-9 text-sm rounded-md border border-input bg-transparent px-3 w-28"
+                    className="h-9 text-sm rounded-md border border-input bg-transparent px-3 w-24 sm:w-28"
                   >
                     {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((y) => (
                       <option key={y} value={y}>{y}</option>

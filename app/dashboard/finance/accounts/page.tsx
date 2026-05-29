@@ -292,43 +292,47 @@ export default function AccountsPage() {
                       <TableCell className="text-muted-foreground">{account.description || "—"}</TableCell>
                       <TableCell className="text-right font-medium">Rs. <PrivacyAmount>{parseFloat(account.balance).toLocaleString()}</PrivacyAmount></TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-0.5 sm:gap-1 flex-wrap">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-emerald-600 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-emerald-600 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
                             onClick={() => openTopUp(account.id)}
+                            title="Top Up"
                           >
-                            <ArrowUp className="h-4 w-4" />
+                            <ArrowUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
                             onClick={() => openTransfer(account.id)}
+                            title="Transfer"
                           >
-                            <ArrowLeftRight className="h-4 w-4" />
+                            <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </Button>
                           <Link href={`/dashboard/finance/accounts/${account.id}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Eye className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" title="View">
+                              <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </Button>
                           </Link>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
                             onClick={() => openEditSlide(account.id)}
+                            title="Edit"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => deleteAccount(account.id, account.name)}
+                            title="Delete"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </Button>
                         </div>
                       </TableCell>

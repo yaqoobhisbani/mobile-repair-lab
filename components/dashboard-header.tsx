@@ -178,7 +178,7 @@ export function DashboardHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pl-14 md:pl-6 pr-4 md:pr-6">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {crumbs.length > 0 && (
             <nav className="flex items-center gap-1.5 text-sm text-muted-foreground truncate">

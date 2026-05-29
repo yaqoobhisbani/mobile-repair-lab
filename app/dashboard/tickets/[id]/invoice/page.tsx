@@ -94,14 +94,14 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
       <Card className="print:shadow-none print:border-none print:bg-transparent">
         <CardContent className="p-8 print:p-0">
           <div id="invoice-content" className="space-y-8">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold">{s.shopName}</h2>
                 <p className="text-sm text-muted-foreground">{addressLine1}</p>
                 {addressLine2 && <p className="text-sm text-muted-foreground">{addressLine2}</p>}
                 <p className="text-sm text-muted-foreground">Phone: {s.shopPhone}</p>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <h3 className="text-lg font-semibold">Invoice</h3>
                 <p className="text-sm text-muted-foreground">INV-{id}</p>
                 <Badge variant={paymentBadgeVariant[ticket.paymentStatus] ?? "secondary"} className="mt-1 capitalize">
@@ -112,14 +112,14 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
 
             <Separator />
 
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
                 <p className="text-sm font-medium mb-1">Bill To:</p>
                 <p className="font-medium">{ticket.customerName}</p>
                 <p className="text-sm text-muted-foreground">{ticket.customerEmail || "—"}</p>
                 <p className="text-sm text-muted-foreground">{ticket.customerPhone || "—"}</p>
               </div>
-              <div className="text-right text-sm text-muted-foreground">
+              <div className="text-left sm:text-right text-sm text-muted-foreground">
                 <p>Issue Date: {formatDate(ticket.createdAt)}</p>
                 <p className="mt-1">Device: {capitalize(ticket.brand)} {ticket.model}</p>
                 <p>Ticket: {id}</p>
@@ -128,6 +128,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
 
             <Separator />
 
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
@@ -161,9 +162,10 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                 </tr>
               </tbody>
             </table>
+            </div>
 
             <div className="flex justify-end">
-              <div className="w-64 space-y-2">
+              <div className="w-full sm:w-64 space-y-2">
                 {ticket.paymentAccountName && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Payment Method</span>

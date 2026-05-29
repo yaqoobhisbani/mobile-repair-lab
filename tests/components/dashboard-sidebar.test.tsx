@@ -53,9 +53,8 @@ describe("DashboardSidebar", () => {
     expect(screen.getByText("Finance")).toBeInTheDocument()
   })
 
-  it("renders close button when onClose is provided", () => {
+  it("does not render close button (handled by Sheet)", () => {
     render(<DashboardSidebar onClose={() => {}} />)
-    const closeBtn = screen.getByRole("button")
-    expect(closeBtn).toBeInTheDocument()
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
   })
 })

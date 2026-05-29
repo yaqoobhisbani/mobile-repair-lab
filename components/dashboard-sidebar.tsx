@@ -16,7 +16,6 @@ import {
   Settings,
   Wallet,
   Landmark,
-  X,
   BarChart3,
   Building2,
   Receipt,
@@ -58,11 +57,6 @@ export function DashboardSidebar({ onClose }: DashboardSidebarProps) {
           </div>
           <span className="font-semibold">{shopName}</span>
         </Link>
-        {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden">
-            <X className="h-5 w-5" />
-          </Button>
-        )}
       </div>
 
       <div className="px-4">

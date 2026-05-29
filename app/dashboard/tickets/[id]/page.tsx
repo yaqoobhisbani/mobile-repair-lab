@@ -468,7 +468,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                       step="0.01"
                       value={draftLaborCost}
                       onChange={(e) => { setDraftLaborCost(e.target.value); setFieldErrors((prev) => ({ ...prev, laborCost: "" })) }}
-                      className={cn("h-8 w-28", fieldErrors.laborCost && "border-destructive")}
+                      className={cn("h-8 w-20 sm:w-28", fieldErrors.laborCost && "border-destructive")}
                     />
                     {fieldErrors.laborCost && (
                       <p className="text-xs text-destructive mt-1">{fieldErrors.laborCost}</p>
