@@ -10,7 +10,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "bun run db/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:api": "vitest run tests/api/",
+    "test:components": "vitest run tests/components/"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
