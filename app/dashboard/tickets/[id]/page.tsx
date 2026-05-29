@@ -260,7 +260,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/dashboard/tickets/${id}/invoice`}>
-            <Button variant="secondary" size="sm" className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:border-gray-700">
+            <Button variant="secondary" size="sm" className="bg-card text-gray-700 hover:bg-accent hover:text-accent-foreground border dark:text-gray-200 dark:hover:bg-accent dark:hover:text-accent-foreground">
               <Download className="h-4 w-4 mr-2" />
               Invoice
             </Button>

@@ -19,6 +19,7 @@ import {
   X,
   BarChart3,
   Building2,
+  Receipt,
 } from "lucide-react"
 
 const mainNavItems = [
@@ -27,6 +28,7 @@ const mainNavItems = [
 
 const operationsNavItems = [
   { href: "/dashboard/tickets", label: "Tickets", icon: ClipboardList },
+  { href: "/dashboard/sales", label: "Sales", icon: Receipt },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/inventory", label: "Inventory", icon: Package },
 ]

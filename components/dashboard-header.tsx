@@ -59,6 +59,7 @@ const navItems: NavItem[] = [
 const breadcrumbLabels: Record<string, string> = {
   dashboard: "Dashboard",
   tickets: "Tickets",
+  sales: "Sales",
   inventory: "Inventory",
   customers: "Customers",
   reports: "Reports",

@@ -249,7 +249,7 @@ export default function CustomersPage() {
                       <TableCell>{customer.phone}</TableCell>
                       <TableCell className="text-muted-foreground">{customer.email ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(customer.createdAt).toLocaleDateString()}
+                        {(() => { const d = new Date(customer.createdAt); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}` })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">

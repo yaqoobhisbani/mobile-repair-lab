@@ -230,6 +230,11 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                               {t.referenceId}
                               <ExternalLink className="h-3 w-3" />
                             </Link>
+                          ) : t.referenceType === "sale" && t.referenceId ? (
+                            <Link href={`/dashboard/sales/${t.referenceId}`} className="inline-flex items-center gap-1 text-primary hover:underline">
+                              {t.referenceId}
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
                           ) : t.referenceType === "expense" ? (
                             <Badge variant="outline" className="text-xs">Expense</Badge>
                           ) : t.referenceType === "top_up" ? (

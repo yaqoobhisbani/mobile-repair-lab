@@ -145,6 +145,30 @@ export const settings = pgTable("settings", {
   currency: varchar("currency", { length: 10 }).notNull().default("PKR"),
 })
 
+export const saleOrders = pgTable("sale_orders", {
+  id: varchar("id", { length: 20 }).primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id),
+  customerName: varchar("customer_name", { length: 255 }),
+  customerPhone: varchar("customer_phone", { length: 50 }),
+  paymentAccountId: integer("payment_account_id")
+    .notNull()
+    .references(() => accounts.id),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const saleItems = pgTable("sale_items", {
+  id: serial("id").primaryKey(),
+  saleId: varchar("sale_id", { length: 20 })
+    .notNull()
+    .references(() => saleOrders.id),
+  inventoryId: integer("inventory_id")
+    .notNull()
+    .references(() => inventory.id),
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+})
+
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id")
@@ -153,7 +177,7 @@ export const transactions = pgTable("transactions", {
   type: varchar("type", { length: 10 }).notNull(), // "credit" | "debit"
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   description: text("description").notNull(),
-  referenceType: varchar("reference_type", { length: 50 }).notNull(), // "ticket" | "expense" | "opening_balance"
+  referenceType: varchar("reference_type", { length: 50 }).notNull(), // "ticket" | "expense" | "opening_balance" | "sale"
   referenceId: varchar("reference_id", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })

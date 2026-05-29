@@ -10,6 +10,7 @@ const gradientClasses: Record<string, string> = {
   inventory: "bg-gradient-to-r from-amber-600 to-orange-600",
   customers: "bg-gradient-to-r from-violet-600 to-purple-600",
   tickets: "bg-gradient-to-r from-cyan-600 to-teal-600",
+  orange: "bg-gradient-to-r from-orange-600 to-rose-600",
   default: "bg-gradient-to-r from-blue-500 via-emerald-500 to-cyan-500",
 }
 
