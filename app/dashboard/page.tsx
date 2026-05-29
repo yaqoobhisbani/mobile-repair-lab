@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { TicketStatusBadge } from "@/components/ticket-status-badge"
-import { ClipboardList, Package, DollarSign, AlertTriangle, ArrowRight } from "lucide-react"
+import { ClipboardList, Package, DollarSign, AlertTriangle, ArrowRight, Receipt, TrendingUp } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
@@ -15,6 +15,7 @@ import { useTickets } from "@/hooks/queries/use-tickets"
 import { useInventory } from "@/hooks/queries/use-inventory"
 import { useAccounts } from "@/hooks/queries/use-accounts"
 import { useExpenses } from "@/hooks/queries/use-expenses"
+import { useSales } from "@/hooks/queries/use-sales"
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -25,8 +26,9 @@ export default function DashboardOverview() {
   const { data: inventory, isLoading: inventoryLoading } = useInventory()
   const { data: accounts, isLoading: accountsLoading } = useAccounts()
   const { data: expenses, isLoading: expensesLoading } = useExpenses()
+  const { data: sales, isLoading: salesLoading } = useSales()
 
-  const loading = ticketsLoading || inventoryLoading || accountsLoading || expensesLoading
+  const loading = ticketsLoading || inventoryLoading || accountsLoading || expensesLoading || salesLoading
 
   const stats = useMemo(() => {
     const t = tickets ?? []
@@ -55,10 +57,29 @@ export default function DashboardOverview() {
 
     const totalBalance = a.reduce((s, ac) => s + parseFloat(ac.balance), 0)
 
-    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses: monthExpensesTotal, monthExpenseCount, totalBalance, totalTickets: t.length }
-  }, [tickets, inventory, accounts, expenses])
+    const s = sales ?? []
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yearStart = new Date(now.getFullYear(), 0, 1)
+    const todaySales = s.filter((sale) => new Date(sale.createdAt) >= todayStart).length
+    const todayRevenue = s
+      .filter((sale) => new Date(sale.createdAt) >= todayStart)
+      .reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
+    const monthSales = s.filter((sale) => new Date(sale.createdAt) >= monthStart).length
+    const monthRevenue = s
+      .filter((sale) => new Date(sale.createdAt) >= monthStart)
+      .reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
+    const yearSales = s.filter((sale) => new Date(sale.createdAt) >= yearStart).length
+    const yearRevenue = s
+      .filter((sale) => new Date(sale.createdAt) >= yearStart)
+      .reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
+    const totalRevenue = s.reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
+    const totalSales = s.length
+
+    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses: monthExpensesTotal, monthExpenseCount, totalBalance, totalTickets: t.length, todaySales, todayRevenue, monthSales, monthRevenue, yearSales, yearRevenue, totalRevenue, totalSales }
+  }, [tickets, inventory, accounts, expenses, sales])
 
   const recentTickets = (tickets ?? []).slice(0, 5)
+  const recentSales = (sales ?? []).slice(0, 5)
 
   const lowStockItems = (inventory ?? [])
     .filter((i) => {
@@ -178,56 +199,74 @@ export default function DashboardOverview() {
 
         <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StaggerItem>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-2xl font-bold ${stats.lowStock > 0 ? "text-amber-500" : ""}`}>
-                  <AnimatedCounter to={stats.lowStock} />
-                </p>
-              </CardContent>
-            </Card>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Pickup</CardTitle>
+                  <ClipboardList className="h-4 w-4 text-emerald-500" />
+                </CardHeader>
+                <CardContent>
+                  <p className={`text-2xl font-bold ${stats.ready > 0 ? "text-emerald-600" : ""}`}>
+                    <AnimatedCounter to={stats.ready} />
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tickets awaiting collection</p>
+                </CardContent>
+              </Card>
+            </HoverCard>
           </StaggerItem>
           <StaggerItem>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Out of Stock</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-2xl font-bold ${stats.outOfStock > 0 ? "text-destructive" : ""}`}>
-                  <AnimatedCounter to={stats.outOfStock} />
-                </p>
-              </CardContent>
-            </Card>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <p className={`text-2xl font-bold ${stats.lowStock > 0 ? "text-amber-500" : ""}`}>
+                    <AnimatedCounter to={stats.lowStock} />
+                  </p>
+                  <p className="text-xs text-muted-foreground">{stats.outOfStock} out of stock items</p>
+                </CardContent>
+              </Card>
+            </HoverCard>
           </StaggerItem>
           <StaggerItem>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Pickup</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-2xl font-bold ${stats.ready > 0 ? "text-emerald-600" : ""}`}>
-                  <AnimatedCounter to={stats.ready} />
-                </p>
-              </CardContent>
-            </Card>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Today Sales</CardTitle>
+                  <Receipt className="h-4 w-4 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    <AnimatedCounter to={stats.todaySales} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Rs. <PrivacyAmount><AnimatedCounter to={stats.todayRevenue} decimals={2} /></PrivacyAmount>
+                  </p>
+                </CardContent>
+              </Card>
+            </HoverCard>
           </StaggerItem>
           <StaggerItem>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Tickets</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">
-                  <AnimatedCounter to={stats.totalTickets} />
-                </p>
-              </CardContent>
-            </Card>
+            <HoverCard>
+              <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/60 dark:to-background border-orange-100 dark:border-orange-900/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">This Month Revenue</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    Rs. <PrivacyAmount><AnimatedCounter to={stats.monthRevenue} decimals={2} /></PrivacyAmount>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{stats.monthSales} sales this month</p>
+                </CardContent>
+              </Card>
+            </HoverCard>
           </StaggerItem>
         </StaggerContainer>
 
-        <StaggerContainer className="grid gap-4 lg:grid-cols-2">
+        <StaggerContainer className="grid gap-4 lg:grid-cols-3">
           <StaggerItem>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -252,6 +291,38 @@ export default function DashboardOverview() {
                           <p className="text-xs text-muted-foreground">{ticket.id} — {capitalize(ticket.brand)} {ticket.model}</p>
                         </div>
                         <TicketStatusBadge status={ticket.status} />
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </StaggerItem>
+
+          <StaggerItem>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Recent Sales</CardTitle>
+                </div>
+                <Link href="/dashboard/sales">
+                  <Button variant="ghost" size="sm">
+                    View All <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentSales.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">No sales yet.</p>
+                  ) : (
+                    recentSales.map((sale) => (
+                      <Link key={sale.id} href={`/dashboard/sales/${sale.id}`} className="flex items-center justify-between group">
+                        <div>
+                          <p className="text-sm font-medium group-hover:underline">{sale.customerName || "Walk-in"}</p>
+                          <p className="text-xs text-muted-foreground">{sale.id}</p>
+                        </div>
+                        <span className="text-xs font-medium">Rs. {parseFloat(sale.totalAmount).toFixed(2)}</span>
                       </Link>
                     ))
                   )}
