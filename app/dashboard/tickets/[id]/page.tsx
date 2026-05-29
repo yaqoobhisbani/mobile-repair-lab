@@ -259,36 +259,38 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
           {fieldErrors.form}
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/tickets">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Ticket {id}</h1>
-              <TicketStatusBadge status={draftStatus} />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link href="/dashboard/tickets">
+              <Button variant="ghost" size="icon">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent truncate">Ticket {id}</h1>
+                <TicketStatusBadge status={draftStatus} />
+              </div>
             </div>
-            <p className="text-muted-foreground">{capitalize(ticket.brand)} {ticket.model} {ticket.customerName}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href={`/dashboard/tickets/${id}/invoice`}>
+              <Button variant="secondary" size="sm" className="bg-card text-gray-700 hover:bg-accent hover:text-accent-foreground border dark:text-gray-200 dark:hover:bg-accent dark:hover:text-accent-foreground">
+                <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Invoice</span>
+              </Button>
+            </Link>
+            <Button onClick={handleSave} disabled={saving || !hasChanges} size="sm">
+              {saving ? (
+                <><Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" /><span className="hidden sm:inline">Saving...</span></>
+              ) : (
+                <><Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /><span className="hidden sm:inline">Save Changes</span></>
+              )}
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/dashboard/tickets/${id}/invoice`}>
-            <Button variant="secondary" size="sm" className="bg-card text-gray-700 hover:bg-accent hover:text-accent-foreground border dark:text-gray-200 dark:hover:bg-accent dark:hover:text-accent-foreground">
-              <Download className="h-4 w-4 mr-2" />
-              Invoice
-            </Button>
-          </Link>
-          <Button onClick={handleSave} disabled={saving || !hasChanges}>
-            {saving ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
-            ) : (
-              <><Save className="h-4 w-4 mr-2" />Save Changes</>
-            )}
-          </Button>
-        </div>
+        <p className="text-muted-foreground text-sm">{capitalize(ticket.brand)} {ticket.model} {ticket.customerName}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
@@ -411,7 +413,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[7fr_3fr]">
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -425,6 +427,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -445,10 +448,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 ) : (
                   items.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.partName}</TableCell>
-                      <TableCell>{item.sku}</TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">{item.partName}</TableCell>
+                      <TableCell className="whitespace-nowrap">{item.sku}</TableCell>
                       <TableCell>{item.quantityUsed}</TableCell>
-                      <TableCell>{item.sellingPrice ? <PrivacyAmount>Rs. {item.sellingPrice}</PrivacyAmount> : "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{item.sellingPrice ? <PrivacyAmount>Rs. {item.sellingPrice}</PrivacyAmount> : "—"}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => removePart(item.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -458,7 +461,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   ))
                 )}
                 <TableRow>
-                  <TableCell className="font-medium">Labor / Service Fee</TableCell>
+                  <TableCell className="font-medium whitespace-nowrap">Labor / Service Fee</TableCell>
                   <TableCell>—</TableCell>
                   <TableCell>1</TableCell>
                   <TableCell>
@@ -478,10 +481,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 </TableRow>
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="pb-3">
             <CardTitle>Payment</CardTitle>
           </CardHeader>
