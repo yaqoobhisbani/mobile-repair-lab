@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { ticketItems, inventory, tickets } from "@/db/schema"
+import { ticketItems, inventory } from "@/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 
 export async function POST(
@@ -61,7 +61,7 @@ export async function POST(
           .returning()
         await tx
           .update(inventory)
-          .set({ stockQty: part.stockQty - quantityUsed })
+          .set({ stockQty: sql`${inventory.stockQty} - ${quantityUsed}` })
           .where(eq(inventory.id, inventoryId))
         return i
       })
@@ -77,7 +77,7 @@ export async function POST(
           .returning()
         await tx
           .update(inventory)
-          .set({ stockQty: part.stockQty - quantityUsed })
+          .set({ stockQty: sql`${inventory.stockQty} - ${quantityUsed}` })
           .where(eq(inventory.id, inventoryId))
         return i
       })

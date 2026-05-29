@@ -73,10 +73,11 @@ export async function POST(request: Request) {
         .from(customers)
         .where(eq(customers.id, customerId))
         .limit(1)
-      if (cust) {
-        resolvedName = cust.name
-        resolvedPhone = cust.phone
+      if (!cust) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 })
       }
+      resolvedName = cust.name
+      resolvedPhone = cust.phone
     }
 
     const sale = await db.transaction(async (tx) => {

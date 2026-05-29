@@ -227,6 +227,44 @@ export async function DELETE(
     const { id } = await params
 
     await db.transaction(async (tx) => {
+      const items = await tx
+        .select()
+        .from(ticketItems)
+        .where(eq(ticketItems.ticketId, id))
+
+      for (const item of items) {
+        await tx
+          .update(inventory)
+          .set({ stockQty: sql`${inventory.stockQty} + ${item.quantityUsed}` })
+          .where(eq(inventory.id, item.inventoryId))
+      }
+
+      const [ticket] = await tx
+        .select()
+        .from(tickets)
+        .where(eq(tickets.id, id))
+        .limit(1)
+
+      if (ticket) {
+        const paid = parseFloat(String(ticket.amountPaid ?? "0"))
+        if (paid > 0 && ticket.paymentAccountId) {
+          await tx
+            .update(accounts)
+            .set({ balance: sql`${accounts.balance} - ${paid}` })
+            .where(eq(accounts.id, ticket.paymentAccountId))
+
+          await insertTransaction(
+            ticket.paymentAccountId,
+            "debit",
+            paid,
+            `Reversed payment for deleted Ticket ${id}`,
+            "ticket",
+            id,
+            tx,
+          )
+        }
+      }
+
       await tx.delete(ticketItems).where(eq(ticketItems.ticketId, id))
       await tx.delete(tickets).where(eq(tickets.id, id))
     })

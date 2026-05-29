@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       .values({ email: email.toLowerCase(), passwordHash, name })
       .returning({ id: users.id, email: users.email, name: users.name })
 
-    const token = signToken({ userId: user.id, email: user.email })
+    const token = await signToken({ userId: user.id, email: user.email })
     await setAuthCookie(token)
 
     return NextResponse.json({ user }, { status: 201 })

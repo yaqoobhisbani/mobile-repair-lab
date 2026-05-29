@@ -1,12 +1,15 @@
 import { compare, hash } from "bcryptjs"
-import { sign, verify } from "jsonwebtoken"
+import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
 import { db } from "@/db"
 import { users } from "@/db/schema"
 import { eq } from "drizzle-orm"
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production"
 const COOKIE_NAME = "mrl_session"
+
+function getSecret() {
+  return new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-change-in-production")
+}
 
 export interface JwtPayload {
   userId: number
@@ -21,16 +24,11 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return compare(password, hash)
 }
 
-export function signToken(payload: JwtPayload): string {
-  return sign(payload, JWT_SECRET, { expiresIn: "7d" })
-}
-
-export function verifyToken(token: string): JwtPayload | null {
-  try {
-    return verify(token, JWT_SECRET) as JwtPayload
-  } catch {
-    return null
-  }
+export async function signToken(payload: JwtPayload): Promise<string> {
+  return new SignJWT({ userId: payload.userId, email: payload.email })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("7d")
+    .sign(getSecret())
 }
 
 export async function setAuthCookie(token: string) {
@@ -54,14 +52,18 @@ export async function getCurrentUser() {
   const token = cookieStore.get(COOKIE_NAME)?.value
   if (!token) return null
 
-  const payload = verifyToken(token)
-  if (!payload) return null
+  try {
+    const { payload } = await jwtVerify(token, getSecret())
+    const { userId } = payload as unknown as JwtPayload
 
-  const [user] = await db
-    .select({ id: users.id, email: users.email, name: users.name })
-    .from(users)
-    .where(eq(users.id, payload.userId))
-    .limit(1)
+    const [user] = await db
+      .select({ id: users.id, email: users.email, name: users.name })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
 
-  return user || null
+    return user || null
+  } catch {
+    return null
+  }
 }

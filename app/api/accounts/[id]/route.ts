@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { accounts } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { accounts, transactions, expenses, tickets, saleOrders, inventory } from "@/db/schema"
+import { eq, sql } from "drizzle-orm"
 
 export async function GET(
   _request: Request,
@@ -50,13 +50,15 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid account type" }, { status: 400 })
     }
 
+    const updateData: Record<string, any> = {
+      name: name?.trim() || undefined,
+      type: type || undefined,
+      description: description !== undefined ? (description?.trim() || null) : undefined,
+    }
+
     const [account] = await db
       .update(accounts)
-      .set({
-        name: name?.trim() || undefined,
-        type: type || undefined,
-        description: description !== undefined ? (description?.trim() || null) : undefined,
-      })
+      .set(updateData)
       .where(eq(accounts.id, numericId))
       .returning()
 
@@ -80,6 +82,66 @@ export async function DELETE(
 
     if (isNaN(numericId)) {
       return NextResponse.json({ error: "Invalid account ID" }, { status: 400 })
+    }
+
+    const [txCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(transactions)
+      .where(eq(transactions.accountId, numericId))
+
+    if (txCount && txCount.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete account: ${txCount.count} transaction(s) reference this account.` },
+        { status: 400 }
+      )
+    }
+
+    const [expenseCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(expenses)
+      .where(eq(expenses.accountId, numericId))
+
+    if (expenseCount && expenseCount.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete account: ${expenseCount.count} expense(s) reference this account.` },
+        { status: 400 }
+      )
+    }
+
+    const [ticketCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(tickets)
+      .where(eq(tickets.paymentAccountId, numericId))
+
+    if (ticketCount && ticketCount.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete account: ${ticketCount.count} ticket(s) reference this account.` },
+        { status: 400 }
+      )
+    }
+
+    const [saleCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(saleOrders)
+      .where(eq(saleOrders.paymentAccountId, numericId))
+
+    if (saleCount && saleCount.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete account: ${saleCount.count} sale(s) reference this account.` },
+        { status: 400 }
+      )
+    }
+
+    const [invCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(inventory)
+      .where(eq(inventory.accountId, numericId))
+
+    if (invCount && invCount.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete account: ${invCount.count} inventory item(s) reference this account.` },
+        { status: 400 }
+      )
     }
 
     const [account] = await db

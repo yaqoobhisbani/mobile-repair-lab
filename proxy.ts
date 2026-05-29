@@ -1,0 +1,34 @@
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { jwtVerify } from "jose"
+
+const COOKIE_NAME = "mrl_session"
+const publicApiPaths = ["/api/auth/login", "/api/auth/register"]
+
+function getSecret() {
+  return new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-change-in-production")
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  if (!pathname.startsWith("/api/")) return NextResponse.next()
+  if (publicApiPaths.some((p) => pathname === p)) return NextResponse.next()
+  if (pathname === "/api/auth/logout") return NextResponse.next()
+
+  const token = request.cookies.get(COOKIE_NAME)?.value
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    await jwtVerify(token, getSecret())
+    return NextResponse.next()
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+}
+
+export const config = {
+  matcher: "/api/:path*",
+}

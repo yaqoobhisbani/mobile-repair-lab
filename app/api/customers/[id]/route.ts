@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { customers } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { customers, tickets, saleOrders } from "@/db/schema"
+import { eq, sql } from "drizzle-orm"
 
 export async function GET(
   _request: Request,
@@ -80,6 +80,30 @@ export async function DELETE(
     const numericId = Number(id)
     if (isNaN(numericId)) {
       return NextResponse.json({ error: "Invalid customer ID" }, { status: 400 })
+    }
+
+    const [ticketCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(tickets)
+      .where(eq(tickets.customerId, numericId))
+
+    if (ticketCount && ticketCount.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete customer: ${ticketCount.count} ticket(s) reference this customer.` },
+        { status: 400 }
+      )
+    }
+
+    const [saleCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(saleOrders)
+      .where(eq(saleOrders.customerId, numericId))
+
+    if (saleCount && saleCount.count > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete customer: ${saleCount.count} sale(s) reference this customer.` },
+        { status: 400 }
+      )
     }
 
     const [customer] = await db

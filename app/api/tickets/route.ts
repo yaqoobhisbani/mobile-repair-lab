@@ -69,6 +69,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Customer, brand, model, and problem category are required" }, { status: 400 })
     }
 
+    const [cust] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.id, customerId))
+      .limit(1)
+
+    if (!cust) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 })
+    }
+
     const ticket = await db.transaction(async (tx) => {
       const [lastTicket] = await tx
         .select({ id: tickets.id })

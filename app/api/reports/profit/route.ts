@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { tickets, ticketItems, inventory } from "@/db/schema"
-import { eq, desc, and, gte, lte } from "drizzle-orm"
+import { eq, desc, and, gte, lte, or } from "drizzle-orm"
 
 export async function GET(request: Request) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid period" }, { status: 400 })
     }
 
-    const conditions = [eq(tickets.status, "completed")]
+    const conditions = [or(eq(tickets.status, "completed"), eq(tickets.status, "ready_for_pickup"))]
     if (from) conditions.push(gte(tickets.createdAt, new Date(from)))
     if (to) {
       const toDate = new Date(to)
