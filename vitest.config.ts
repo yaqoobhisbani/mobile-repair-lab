@@ -6,12 +6,15 @@ export default defineConfig({
     globals: true,
     environment: "node",
     globalSetup: ["./tests/global-setup.ts"],
-    setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.test.ts"],
+    setupFiles: ["./tests/setup.ts", "./tests/components/setup.tsx"],
+    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     testTimeout: 30000,
     hookTimeout: 30000,
     fileParallelism: false,
     pool: "forks",
+    environmentMatchGlobs: [
+      ["tests/components/**", "jsdom"],
+    ],
   },
   resolve: {
     alias: {
