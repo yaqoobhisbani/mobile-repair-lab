@@ -291,8 +291,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+      <div className="grid gap-6 lg:grid-cols-4">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Repair Details</CardTitle>
             <CardDescription>Device and issue information.</CardDescription>
@@ -345,137 +345,28 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Customer</CardTitle>
-              <CardDescription>Contact information.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Name</span>
-                <span className="text-sm font-medium">{ticket.customerName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Phone</span>
-                <span className="text-sm">{ticket.customerPhone || "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Email</span>
-                <span className="text-sm">{ticket.customerEmail || "—"}</span>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Created</span>
-                <span className="text-sm">{formatDate(ticket.createdAt)}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle>Customer</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+            <span className="text-muted-foreground">Name</span>
+            <span className="font-medium">{ticket.customerName}</span>
+            <span className="text-muted-foreground">Phone</span>
+            <span>{ticket.customerPhone || "—"}</span>
+            <span className="text-muted-foreground">Email</span>
+            <span>{ticket.customerEmail || "—"}</span>
+            <span className="text-muted-foreground">Created</span>
+            <span>{formatDate(ticket.createdAt)}</span>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment</CardTitle>
-              <CardDescription>Status, account, and amount.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Payment Status</Label>
-                <Select value={draftPaymentStatus} onValueChange={setDraftPaymentStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentStatusOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Account</Label>
-                <Select value={draftPaymentAccountId} onValueChange={(v) => { setDraftPaymentAccountId(v); setFieldErrors((prev) => ({ ...prev, paymentAccountId: "" })) }}>
-                  <SelectTrigger className={fieldErrors.paymentAccountId ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">—</SelectItem>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {fieldErrors.paymentAccountId && (
-                  <p className="text-xs text-destructive mt-1">{fieldErrors.paymentAccountId}</p>
-                )}
-              </div>
-              <Separator />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Discount</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Select value={draftDiscountType} onValueChange={(v) => { setDraftDiscountType(v); setDraftDiscountValue("") }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="No discount" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="percentage">Percentage (%)</SelectItem>
-                      <SelectItem value="amount">Amount (Rs.)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {draftDiscountType !== "none" && (
-                  <div>
-                    <Input
-                      type="number"
-                      min="0"
-                      step={draftDiscountType === "percentage" ? "1" : "0.01"}
-                      placeholder={draftDiscountType === "percentage" ? "10" : "100"}
-                      value={draftDiscountValue}
-                      onChange={(e) => setDraftDiscountValue(e.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between text-sm pt-2 border-t">
-                <span className="font-medium">Total</span>
-                <span className="font-bold">Rs. {computeTotal().toFixed(2)}</span>
-              </div>
-            {draftPaymentStatus === "partially_paid" && (
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Amount Paid (Rs.)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={draftAmountPaid}
-                  onChange={(e) => { setDraftAmountPaid(e.target.value); setFieldErrors((prev) => ({ ...prev, amountPaid: "" })) }}
-                  className={fieldErrors.amountPaid ? "border-destructive" : ""}
-                />
-                {fieldErrors.amountPaid ? (
-                  <p className="text-xs text-destructive mt-1">{fieldErrors.amountPaid}</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Remaining: <PrivacyAmount as="span">Rs. {Math.max(0, computeTotal() - parseFloat(draftAmountPaid || "0")).toFixed(2)}</PrivacyAmount>
-                  </p>
-                )}
-              </div>
-            )}
-            {draftPaymentStatus === "paid" && (
-              <p className="text-xs text-muted-foreground">
-                Full amount (<PrivacyAmount as="span">Rs. {computeTotal().toFixed(2)}</PrivacyAmount>) will be applied as paid.
-              </p>
-            )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-3">
             <CardTitle>Status Timeline</CardTitle>
-            <CardDescription>History of status changes.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {statusHistory.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No history recorded yet.</p>
               ) : (
@@ -490,13 +381,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     cancelled: "Cancelled",
                   }
                   return (
-                    <div key={entry.id} className="flex items-start gap-3">
+                    <div key={entry.id} className="flex items-start gap-2">
                       <div className="flex flex-col items-center">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary bg-primary text-primary-foreground">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary bg-primary text-primary-foreground">
                           <div className="h-2 w-2 rounded-full bg-current" />
                         </div>
                         {index < statusHistory.length - 1 && (
-                          <div className="w-0.5 h-8 bg-muted-foreground/20" />
+                          <div className="w-0.5 h-6 bg-muted-foreground/20" />
                         )}
                       </div>
                       <div className="pt-0.5">
@@ -519,75 +410,195 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Parts Used</CardTitle>
-              <CardDescription>Inventory items attached to this ticket.</CardDescription>
+      <div className="grid gap-6 lg:grid-cols-[7fr_3fr]">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Parts Used</CardTitle>
+                <CardDescription>Inventory items attached to this ticket.</CardDescription>
+              </div>
+              <Button variant="secondary" size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700" onClick={() => setShowAddPart(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Part
+              </Button>
             </div>
-            <Button variant="secondary" size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700" onClick={() => setShowAddPart(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Part
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Part</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Qty</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.length === 0 ? (
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                    No parts attached to this ticket.
-                  </TableCell>
+                  <TableHead>Part</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Qty</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ) : (
-                items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.partName}</TableCell>
-                    <TableCell>{item.sku}</TableCell>
-                    <TableCell>{item.quantityUsed}</TableCell>
-                    <TableCell>{item.sellingPrice ? <PrivacyAmount>Rs. {item.sellingPrice}</PrivacyAmount> : "—"}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => removePart(item.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                      No parts attached to this ticket.
                     </TableCell>
                   </TableRow>
-                ))
+                ) : (
+                  items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.partName}</TableCell>
+                      <TableCell>{item.sku}</TableCell>
+                      <TableCell>{item.quantityUsed}</TableCell>
+                      <TableCell>{item.sellingPrice ? <PrivacyAmount>Rs. {item.sellingPrice}</PrivacyAmount> : "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => removePart(item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+                <TableRow>
+                  <TableCell className="font-medium">Labor / Service Fee</TableCell>
+                  <TableCell>—</TableCell>
+                  <TableCell>1</TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={draftLaborCost}
+                      onChange={(e) => { setDraftLaborCost(e.target.value); setFieldErrors((prev) => ({ ...prev, laborCost: "" })) }}
+                      className={cn("h-8 w-28", fieldErrors.laborCost && "border-destructive")}
+                    />
+                    {fieldErrors.laborCost && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.laborCost}</p>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right" />
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Payment</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Payment Status</Label>
+              <Select value={draftPaymentStatus} onValueChange={setDraftPaymentStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentStatusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Account</Label>
+              <Select value={draftPaymentAccountId} onValueChange={(v) => { setDraftPaymentAccountId(v); setFieldErrors((prev) => ({ ...prev, paymentAccountId: "" })) }}>
+                <SelectTrigger className={fieldErrors.paymentAccountId ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">—</SelectItem>
+                  {accounts.map((a) => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldErrors.paymentAccountId && (
+                <p className="text-xs text-destructive mt-1">{fieldErrors.paymentAccountId}</p>
               )}
-              <TableRow>
-                <TableCell className="font-medium">Labor / Service Fee</TableCell>
-                <TableCell>—</TableCell>
-                <TableCell>1</TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={draftLaborCost}
-                    onChange={(e) => { setDraftLaborCost(e.target.value); setFieldErrors((prev) => ({ ...prev, laborCost: "" })) }}
-                    className={cn("h-8 w-28", fieldErrors.laborCost && "border-destructive")}
-                  />
-                  {fieldErrors.laborCost && (
-                    <p className="text-xs text-destructive mt-1">{fieldErrors.laborCost}</p>
-                  )}
-                </TableCell>
-                <TableCell className="text-right" />
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+
+            <Separator />
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Discount Type</Label>
+              <Select value={draftDiscountType} onValueChange={(v) => { setDraftDiscountType(v); setDraftDiscountValue("") }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No discount" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="percentage">Percentage (%)</SelectItem>
+                  <SelectItem value="amount">Amount (Rs.)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {draftDiscountType !== "none" && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  {draftDiscountType === "percentage" ? "Discount %" : "Discount Amount (Rs.)"}
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step={draftDiscountType === "percentage" ? "1" : "0.01"}
+                  placeholder={draftDiscountType === "percentage" ? "10" : "100"}
+                  value={draftDiscountValue}
+                  onChange={(e) => setDraftDiscountValue(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="rounded-lg bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 p-3">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span>Subtotal</span>
+                  <span>Rs. {(items.reduce((s, i) => s + parseFloat(i.sellingPrice ?? "0") * i.quantityUsed, 0) + parseFloat(draftLaborCost || "0")).toFixed(2)}</span>
+                </div>
+                {draftDiscountType !== "none" && draftDiscountValue && (
+                  <div className="flex items-center justify-between text-xs text-green-600">
+                    <span>Discount</span>
+                    <span>- Rs. {(() => { const s = items.reduce((sum, i) => sum + parseFloat(i.sellingPrice ?? "0") * i.quantityUsed, 0) + parseFloat(draftLaborCost || "0"); const dv = parseFloat(draftDiscountValue); return (draftDiscountType === "percentage" ? s * dv / 100 : dv).toFixed(2) })()}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t">
+                  <span className="text-xs font-semibold">Total</span>
+                  <span className="text-base font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Rs. {computeTotal().toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {(draftPaymentStatus === "partially_paid" || draftPaymentStatus === "paid") && (
+              <div>
+                {draftPaymentStatus === "partially_paid" && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Amount Paid (Rs.)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={draftAmountPaid}
+                      onChange={(e) => { setDraftAmountPaid(e.target.value); setFieldErrors((prev) => ({ ...prev, amountPaid: "" })) }}
+                      className={fieldErrors.amountPaid ? "border-destructive" : ""}
+                    />
+                    {fieldErrors.amountPaid ? (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.amountPaid}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Remaining: <PrivacyAmount as="span">Rs. {Math.max(0, computeTotal() - parseFloat(draftAmountPaid || "0")).toFixed(2)}</PrivacyAmount>
+                      </p>
+                    )}
+                  </div>
+                )}
+                {draftPaymentStatus === "paid" && (
+                  <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+                    Full amount (<PrivacyAmount as="span">Rs. {computeTotal().toFixed(2)}</PrivacyAmount>) will be applied as paid.
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <AddPartDialog
         open={showAddPart}
