@@ -67,6 +67,8 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
   const [saveAsCustomer, setSaveAsCustomer] = useState(true)
 
   const [partSearch, setPartSearch] = useState("")
+  const [discountType, setDiscountType] = useState<string>("none")
+  const [discountValue, setDiscountValue] = useState("")
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -129,6 +131,20 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   }, [cart])
+
+  const discountAmount = useMemo(() => {
+    if (discountType === "percentage" && discountValue) {
+      return cartTotal * parseFloat(discountValue) / 100
+    }
+    if (discountType === "amount" && discountValue) {
+      return parseFloat(discountValue)
+    }
+    return 0
+  }, [cartTotal, discountType, discountValue])
+
+  const netTotal = useMemo(() => {
+    return Math.max(0, cartTotal - discountAmount)
+  }, [cartTotal, discountAmount])
 
   const selectCustomer = (c: Customer) => {
     setSelectedCustomer(c)
@@ -203,6 +219,8 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
         customerId,
         customerName,
         customerPhone,
+        discountType: discountType !== "none" ? discountType : null,
+        discountValue: discountValue || null,
       })
       toast.success("Sale completed successfully")
       onSuccess()
@@ -460,6 +478,41 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
       </div>
 
       <div className="rounded-lg border p-4 space-y-3">
+        <p className="text-sm font-medium">Discount</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="discountType">Type</Label>
+            <Select value={discountType} onValueChange={(v) => { setDiscountType(v); setDiscountValue("") }}>
+              <SelectTrigger id="discountType">
+                <SelectValue placeholder="No discount" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="percentage">Percentage (%)</SelectItem>
+                <SelectItem value="amount">Amount (Rs.)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {discountType !== "none" && (
+            <div className="space-y-2">
+              <Label htmlFor="discountValue">
+                {discountType === "percentage" ? "Percentage" : "Amount (Rs.)"}
+              </Label>
+              <Input
+                id="discountValue"
+                type="number"
+                min="0"
+                step={discountType === "percentage" ? "1" : "0.01"}
+                placeholder={discountType === "percentage" ? "10" : "100"}
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-3">
         <p className="text-sm font-medium">Payment</p>
         <div className="space-y-2">
           <Label htmlFor="account">Account *</Label>
@@ -480,11 +533,23 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
 
       {cart.length > 0 && (
         <div className="rounded-lg bg-gradient-to-r from-orange-50 to-rose-50 dark:from-orange-950/30 dark:to-rose-950/30 p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Total Amount</span>
-            <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
-              Rs. {cartTotal.toFixed(2)}
-            </span>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span>Subtotal</span>
+              <span>Rs. {cartTotal.toFixed(2)}</span>
+            </div>
+            {discountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm text-green-600">
+                <span>Discount</span>
+                <span>- Rs. {discountAmount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-1 border-t">
+              <span className="text-sm font-medium">Total Amount</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
+                Rs. {netTotal.toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -501,7 +566,7 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
           {saving ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processing...</>
           ) : (
-            <><ShoppingCart className="h-4 w-4 mr-2" />Complete Sale (Rs. {cartTotal.toFixed(2)})</>
+            <><ShoppingCart className="h-4 w-4 mr-2" />Complete Sale (Rs. {netTotal.toFixed(2)})</>
           )}
         </Button>
       </div>

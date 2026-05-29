@@ -62,7 +62,14 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
     return sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed)
   }, 0)
   const labor = parseFloat(ticket.laborCost ?? "0")
-  const grandTotal = partsTotal + labor
+  const subtotal = partsTotal + labor
+  let discountAmount = 0
+  if (ticket.discountType === "percentage" && ticket.discountValue) {
+    discountAmount = subtotal * parseFloat(ticket.discountValue) / 100
+  } else if (ticket.discountType === "amount" && ticket.discountValue) {
+    discountAmount = parseFloat(ticket.discountValue)
+  }
+  const grandTotal = Math.max(0, subtotal - discountAmount)
 
   return (
     <div className="space-y-6">
@@ -163,7 +170,17 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                     <span>{ticket.paymentAccountType === "cash" ? "Cash" : "Bank Transfer"}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>{sym} {subtotal.toFixed(2)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Discount</span>
+                    <span>- {sym} {discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg pt-1 border-t">
                   <span>Total</span>
                   <span>{sym} {grandTotal.toFixed(2)}</span>
                 </div>

@@ -90,6 +90,8 @@ export const tickets = pgTable("tickets", {
   paymentAccountId: integer("payment_account_id").references(() => accounts.id),
   amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default("0").notNull(),
   laborCost: decimal("labor_cost", { precision: 10, scale: 2 }),
+  discountType: varchar("discount_type", { length: 20 }),
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
@@ -154,6 +156,8 @@ export const saleOrders = pgTable("sale_orders", {
     .notNull()
     .references(() => accounts.id),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  discountType: varchar("discount_type", { length: 20 }),
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 

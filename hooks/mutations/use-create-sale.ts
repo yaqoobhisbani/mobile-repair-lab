@@ -13,6 +13,8 @@ export interface CreateSaleInput {
   customerId?: number | null
   customerName?: string
   customerPhone?: string
+  discountType?: string | null
+  discountValue?: string | null
 }
 
 export function useCreateSale() {

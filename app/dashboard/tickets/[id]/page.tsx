@@ -101,6 +101,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [draftPaymentStatus, setDraftPaymentStatus] = useState("")
   const [draftPaymentAccountId, setDraftPaymentAccountId] = useState<string>("none")
   const [draftLaborCost, setDraftLaborCost] = useState("")
+  const [draftDiscountType, setDraftDiscountType] = useState<string>("none")
+  const [draftDiscountValue, setDraftDiscountValue] = useState("")
   const [draftAmountPaid, setDraftAmountPaid] = useState("")
   const [draftImei, setDraftImei] = useState("")
   const [draftPasscode, setDraftPasscode] = useState("")
@@ -120,6 +122,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       setDraftPaymentStatus(data.ticket.paymentStatus)
       setDraftPaymentAccountId(data.ticket.paymentAccountId ? String(data.ticket.paymentAccountId) : "none")
       setDraftLaborCost(data.ticket.laborCost ?? "")
+      setDraftDiscountType(data.ticket.discountType ?? "none")
+      setDraftDiscountValue(data.ticket.discountValue ?? "")
       setDraftAmountPaid(data.ticket.amountPaid ?? "0")
       setDraftImei(data.ticket.imei ?? "")
       setDraftPasscode(data.ticket.passcode ?? "")
@@ -132,14 +136,23 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
       0
     )
-    return partsSum + parseFloat(draftLaborCost || "0")
-  }, [items, draftLaborCost])
+    const subtotal = partsSum + parseFloat(draftLaborCost || "0")
+    let discountAmount = 0
+    if (draftDiscountType === "percentage" && draftDiscountValue) {
+      discountAmount = subtotal * parseFloat(draftDiscountValue) / 100
+    } else if (draftDiscountType === "amount" && draftDiscountValue) {
+      discountAmount = parseFloat(draftDiscountValue)
+    }
+    return Math.max(0, subtotal - discountAmount)
+  }, [items, draftLaborCost, draftDiscountType, draftDiscountValue])
 
   const hasChanges = ticket && (
     draftStatus !== ticket.status ||
     draftPaymentStatus !== ticket.paymentStatus ||
     draftPaymentAccountId !== (ticket.paymentAccountId ? String(ticket.paymentAccountId) : "none") ||
     draftLaborCost !== (ticket.laborCost ?? "") ||
+    draftDiscountType !== (ticket.discountType ?? "none") ||
+    draftDiscountValue !== (ticket.discountValue ?? "") ||
     draftAmountPaid !== (ticket.amountPaid ?? "0") ||
     draftImei !== (ticket.imei ?? "") ||
     draftPasscode !== (ticket.passcode ?? "") ||
@@ -181,6 +194,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       paymentStatus: draftPaymentStatus,
       paymentAccountId: draftPaymentAccountId === "none" ? null : Number(draftPaymentAccountId),
       laborCost: draftLaborCost || null,
+      discountType: draftDiscountType !== "none" ? draftDiscountType : null,
+      discountValue: draftDiscountValue || null,
       imei: draftImei || null,
       passcode: draftPasscode || null,
       problemDescription: draftDescription || null,
@@ -392,6 +407,38 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 {fieldErrors.paymentAccountId && (
                   <p className="text-xs text-destructive mt-1">{fieldErrors.paymentAccountId}</p>
                 )}
+              </div>
+              <Separator />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Discount</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Select value={draftDiscountType} onValueChange={(v) => { setDraftDiscountType(v); setDraftDiscountValue("") }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="No discount" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                      <SelectItem value="amount">Amount (Rs.)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {draftDiscountType !== "none" && (
+                  <div>
+                    <Input
+                      type="number"
+                      min="0"
+                      step={draftDiscountType === "percentage" ? "1" : "0.01"}
+                      placeholder={draftDiscountType === "percentage" ? "10" : "100"}
+                      value={draftDiscountValue}
+                      onChange={(e) => setDraftDiscountValue(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-sm pt-2 border-t">
+                <span className="font-medium">Total</span>
+                <span className="font-bold">Rs. {computeTotal().toFixed(2)}</span>
               </div>
             {draftPaymentStatus === "partially_paid" && (
               <div>

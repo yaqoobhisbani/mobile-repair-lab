@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { items: saleItemInputs, paymentAccountId, customerId, customerName, customerPhone } = body
+    const { items: saleItemInputs, paymentAccountId, customerId, customerName, customerPhone, discountType, discountValue } = body
 
     if (!saleItemInputs || !saleItemInputs.length || !paymentAccountId) {
       return NextResponse.json({ error: "Items and payment account are required" }, { status: 400 })
@@ -127,6 +127,14 @@ export async function POST(request: Request) {
         })
       }
 
+      let netAmount = totalAmount
+      if (discountType === "percentage" && discountValue) {
+        netAmount = totalAmount - (totalAmount * parseFloat(discountValue) / 100)
+      } else if (discountType === "amount" && discountValue) {
+        netAmount = totalAmount - parseFloat(discountValue)
+      }
+      netAmount = Math.max(0, netAmount)
+
       const [s] = await tx
         .insert(saleOrders)
         .values({
@@ -135,7 +143,9 @@ export async function POST(request: Request) {
           customerName: resolvedName,
           customerPhone: resolvedPhone,
           paymentAccountId,
-          totalAmount: String(totalAmount),
+          totalAmount: String(netAmount),
+          discountType: discountType || null,
+          discountValue: discountValue ? String(discountValue) : null,
         })
         .returning()
 
@@ -145,13 +155,13 @@ export async function POST(request: Request) {
 
       await tx
         .update(accounts)
-        .set({ balance: sql`${accounts.balance} + ${totalAmount}` })
+        .set({ balance: sql`${accounts.balance} + ${netAmount}` })
         .where(eq(accounts.id, paymentAccountId))
 
       await insertTransaction(
         paymentAccountId,
         "credit",
-        totalAmount,
+        netAmount,
         `Sale ${nextId}`,
         "sale",
         nextId,

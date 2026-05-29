@@ -59,6 +59,8 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
   const addressLine2 = restLines.length > 0 ? restLines.join(", ") : ""
 
   const totalAmount = parseFloat(sale.totalAmount)
+  const subtotal = items.reduce((sum, item) => sum + parseFloat(item.unitPrice) * item.quantity, 0)
+  const discountAmount = subtotal - totalAmount
 
   return (
     <div className="space-y-6">
@@ -143,7 +145,17 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
 
             <div className="flex justify-end">
               <div className="w-64 space-y-2">
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>{sym} {subtotal.toFixed(2)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Discount</span>
+                    <span>- {sym} {discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg pt-1 border-t">
                   <span>Total</span>
                   <span>{sym} {totalAmount.toFixed(2)}</span>
                 </div>

@@ -21,6 +21,8 @@ export async function GET(
         paymentAccountName: accounts.name,
         paymentAccountType: accounts.type,
         totalAmount: saleOrders.totalAmount,
+        discountType: saleOrders.discountType,
+        discountValue: saleOrders.discountValue,
         createdAt: saleOrders.createdAt,
       })
       .from(saleOrders)

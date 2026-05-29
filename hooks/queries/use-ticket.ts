@@ -21,6 +21,8 @@ export interface TicketDetail {
   paymentAccountType: string | null
   amountPaid: string
   laborCost: string | null
+  discountType: string | null
+  discountValue: string | null
   createdAt: string
 }
 

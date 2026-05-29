@@ -31,6 +31,8 @@ export async function GET(
         paymentAccountType: accounts.type,
         amountPaid: tickets.amountPaid,
         laborCost: tickets.laborCost,
+        discountType: tickets.discountType,
+        discountValue: tickets.discountValue,
 
         createdAt: tickets.createdAt,
       })
@@ -80,7 +82,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { status, problemDescription, laborCost, imei, passcode, paymentStatus, paymentAccountId, amountPaid } = body
+    const { status, problemDescription, laborCost, imei, passcode, paymentStatus, paymentAccountId, amountPaid, discountType, discountValue } = body
 
     const [current] = await db
       .select({
@@ -89,6 +91,8 @@ export async function PUT(
         paymentAccountId: tickets.paymentAccountId,
         amountPaid: tickets.amountPaid,
         laborCost: tickets.laborCost,
+        discountType: tickets.discountType,
+        discountValue: tickets.discountValue,
       })
       .from(tickets)
       .where(eq(tickets.id, id))
@@ -115,7 +119,17 @@ export async function PUT(
         0
       )
       const resolvedLabor = parseFloat(String(resolvedLaborCost ?? "0"))
-      const totalAmount = partsTotal + resolvedLabor
+      const subtotal = partsTotal + resolvedLabor
+
+      const resolvedDiscountType = discountType !== undefined ? discountType : current.discountType
+      const resolvedDiscountValue = discountValue !== undefined ? parseFloat(String(discountValue)) : parseFloat(String(current.discountValue ?? "0"))
+      let discountAmount = 0
+      if (resolvedDiscountType === "percentage" && resolvedDiscountValue > 0) {
+        discountAmount = subtotal * resolvedDiscountValue / 100
+      } else if (resolvedDiscountType === "amount" && resolvedDiscountValue > 0) {
+        discountAmount = resolvedDiscountValue
+      }
+      const totalAmount = Math.max(0, subtotal - discountAmount)
 
       const resolvedAmountPaid =
         paymentStatus === "paid" ? totalAmount
@@ -133,6 +147,8 @@ export async function PUT(
       if (paymentAccountId !== undefined) {
         updateData.paymentAccountId = paymentAccountId ? Number(paymentAccountId) : null
       }
+      if (discountType !== undefined) updateData.discountType = discountType || null
+      if (discountValue !== undefined) updateData.discountValue = discountValue ? String(discountValue) : null
       updateData.amountPaid = String(resolvedAmountPaid)
 
       const [t] = await tx
