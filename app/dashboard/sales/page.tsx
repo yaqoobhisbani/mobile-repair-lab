@@ -192,8 +192,8 @@ export default function SalesPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-1">
-                    <p className="text-2xl font-bold"><PrivacyAmount><AnimatedCounter to={stats.thisMonthSales} /></PrivacyAmount></p>
-                    <p className="text-xs text-muted-foreground">Rs. <PrivacyAmount><AnimatedCounter to={stats.thisMonthRevenue} decimals={2} /></PrivacyAmount></p>
+                    <p className="text-2xl font-bold">Rs. <PrivacyAmount><AnimatedCounter to={stats.thisMonthRevenue} decimals={2} /></PrivacyAmount></p>
+                    <p className="text-xs text-muted-foreground"><AnimatedCounter to={stats.thisMonthSales} /> sale{stats.thisMonthSales !== 1 ? "s" : ""} this month</p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -205,8 +205,8 @@ export default function SalesPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">This Year</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-1">
-                    <p className="text-2xl font-bold"><PrivacyAmount><AnimatedCounter to={stats.thisYearSales} /></PrivacyAmount></p>
-                    <p className="text-xs text-muted-foreground">Rs. <PrivacyAmount><AnimatedCounter to={stats.thisYearRevenue} decimals={2} /></PrivacyAmount></p>
+                    <p className="text-2xl font-bold">Rs. <PrivacyAmount><AnimatedCounter to={stats.thisYearRevenue} decimals={2} /></PrivacyAmount></p>
+                    <p className="text-xs text-muted-foreground"><AnimatedCounter to={stats.thisYearSales} /> sale{stats.thisYearSales !== 1 ? "s" : ""} this year</p>
                   </CardContent>
                 </Card>
               </HoverCard>
