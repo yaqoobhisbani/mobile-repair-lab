@@ -10,13 +10,20 @@ const statuses = [
   { key: "completed", label: "Completed" },
 ]
 
-const cancelledStatus = { key: "cancelled", label: "Cancelled" }
-
 interface StatusTimelineProps {
   currentStatus: string
+  statusHistory?: { status: string; changedAt: string }[]
 }
 
-export function StatusTimeline({ currentStatus }: StatusTimelineProps) {
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  })
+}
+
+export function StatusTimeline({ currentStatus, statusHistory = [] }: StatusTimelineProps) {
+  const historyMap = new Map(statusHistory.map((h) => [h.status, h.changedAt]))
+
   if (currentStatus === "cancelled") {
     return (
       <div className="space-y-4">
@@ -40,6 +47,7 @@ export function StatusTimeline({ currentStatus }: StatusTimelineProps) {
       {statuses.map((status, index) => {
         const isCompleted = index <= currentIndex
         const isCurrent = index === currentIndex
+        const timestamp = historyMap.get(status.key)
 
         return (
           <div key={status.key} className="flex items-start gap-3">
@@ -67,11 +75,16 @@ export function StatusTimeline({ currentStatus }: StatusTimelineProps) {
                 />
               )}
             </div>
-            <div className={cn("pt-1", isCurrent && "font-medium")}>
-              <p className={cn("text-sm", isCurrent ? "text-foreground" : "text-muted-foreground")}>
+            <div className="flex-1 min-w-0 pt-1">
+              <p className={cn("text-sm", isCurrent ? "font-medium text-foreground" : "text-muted-foreground")}>
                 {status.label}
               </p>
-              {isCurrent && <p className="text-xs text-muted-foreground">Current</p>}
+              {timestamp && (
+                <p className="text-xs text-muted-foreground">{formatDate(timestamp)}</p>
+              )}
+              {isCurrent && !timestamp && (
+                <p className="text-xs text-muted-foreground">Current</p>
+              )}
             </div>
           </div>
         )
