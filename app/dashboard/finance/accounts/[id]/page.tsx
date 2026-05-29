@@ -240,6 +240,10 @@ export default function ViewAccountPage({ params }: { params: Promise<{ id: stri
                             <Badge variant="outline" className="text-xs">Expense</Badge>
                           ) : t.referenceType === "top_up" ? (
                             <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">Top Up</Badge>
+                          ) : t.referenceType === "transfer" && t.type === "debit" ? (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800">Transfer Out</Badge>
+                          ) : t.referenceType === "transfer" && t.type === "credit" ? (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800">Transfer In</Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">Opening</Badge>
                           )}

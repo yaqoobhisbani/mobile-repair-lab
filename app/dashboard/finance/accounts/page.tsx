@@ -4,13 +4,15 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/data-table-pagination"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { PrivacyAmount } from "@/components/privacy-amount"
-import { Plus, Search, X, Pencil, Trash2, Eye, Landmark, Wallet, Building2, Banknote, ArrowUp } from "lucide-react"
+import { Plus, Search, X, Pencil, Trash2, Eye, Landmark, Wallet, Building2, Banknote, ArrowUp, ArrowLeftRight } from "lucide-react"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
@@ -21,6 +23,7 @@ import { EditAccountForm } from "@/components/forms/edit-account-form"
 import { useAccounts } from "@/hooks/queries/use-accounts"
 import { useDeleteAccount } from "@/hooks/mutations/use-delete-account"
 import { useTopUpAccount } from "@/hooks/mutations/use-top-up-account"
+import { useTransferAccount } from "@/hooks/mutations/use-transfer-account"
 
 interface Account {
   id: number
@@ -47,10 +50,16 @@ export default function AccountsPage() {
   const [topUpAccountId, setTopUpAccountId] = useState<number | null>(null)
   const [topUpAmount, setTopUpAmount] = useState("")
   const [topUpDescription, setTopUpDescription] = useState("")
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferSourceId, setTransferSourceId] = useState<number | null>(null)
+  const [transferDestId, setTransferDestId] = useState<number | null>(null)
+  const [transferAmount, setTransferAmount] = useState("")
+  const [transferDescription, setTransferDescription] = useState("")
 
   const { data: accounts = [], isLoading } = useAccounts()
   const deleteAccountMutation = useDeleteAccount()
   const topUpMutation = useTopUpAccount()
+  const transferMutation = useTransferAccount()
 
   function openCreateSlide() { setEditAccountId(null); setSlideOverOpen(true) }
   function openEditSlide(id: number) { setEditAccountId(id); setSlideOverOpen(true) }
@@ -87,6 +96,35 @@ export default function AccountsPage() {
   }
 
   const openTopUp = (id: number) => { setTopUpAccountId(id); setTopUpAmount(""); setTopUpDescription(""); setTopUpOpen(true) }
+
+  const openTransfer = (sourceId: number) => {
+    setTransferSourceId(sourceId)
+    setTransferDestId(null)
+    setTransferAmount("")
+    setTransferDescription("")
+    setTransferOpen(true)
+  }
+
+  const handleTransfer = () => {
+    const amount = parseFloat(transferAmount)
+    if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return }
+    if (!transferSourceId || !transferDestId) { toast.error("Select destination account"); return }
+    if (transferSourceId === transferDestId) { toast.error("Cannot transfer to the same account"); return }
+    const sourceBalance = accounts.find((a) => a.id === transferSourceId)?.balance
+    if (sourceBalance && parseFloat(sourceBalance) < amount) { toast.error("Insufficient balance"); return }
+    transferMutation.mutate(
+      { sourceId: transferSourceId, toAccountId: transferDestId, amount, description: transferDescription || undefined },
+      {
+        onSuccess: () => {
+          toast.success("Transfer completed successfully")
+          setTransferOpen(false)
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Transfer failed")
+        },
+      }
+    )
+  }
 
   const handleTopUp = () => {
     const amount = parseFloat(topUpAmount)
@@ -263,6 +301,14 @@ export default function AccountsPage() {
                           >
                             <ArrowUp className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                            onClick={() => openTransfer(account.id)}
+                          >
+                            <ArrowLeftRight className="h-4 w-4" />
+                          </Button>
                           <Link href={`/dashboard/finance/accounts/${account.id}`}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <Eye className="h-4 w-4" />
@@ -350,6 +396,68 @@ export default function AccountsPage() {
             <Button variant="outline" onClick={() => setTopUpOpen(false)} disabled={topUpMutation.isPending} className="flex-1">Cancel</Button>
             <Button onClick={handleTopUp} disabled={topUpMutation.isPending} className="flex-1">
               {topUpMutation.isPending ? "Topping up..." : "Top Up"}
+            </Button>
+          </div>
+        </div>
+      </SlideOver>
+
+      <SlideOver
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        title="Transfer Funds"
+        description="Move funds between accounts. A debit and credit transaction will be recorded."
+        gradient="accounts"
+      >
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium mb-1 block">From</Label>
+            <p className="text-sm font-medium px-3 py-2 rounded-md border bg-muted/50">
+              {accounts.find((a) => a.id === transferSourceId)?.name ?? "—"}
+            </p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium mb-1 block">To</Label>
+            <Select
+              value={transferDestId ? String(transferDestId) : ""}
+              onValueChange={(v) => setTransferDestId(Number(v))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select destination account" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts
+                  .filter((a) => a.id !== transferSourceId)
+                  .map((a) => (
+                    <SelectItem key={a.id} value={String(a.id)}>
+                      {a.name} (Rs. {parseFloat(a.balance).toLocaleString()})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-sm font-medium mb-1 block">Amount (Rs.)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Enter amount"
+              value={transferAmount}
+              onChange={(e) => setTransferAmount(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium mb-1 block">Description (optional)</Label>
+            <Input
+              placeholder="e.g. Transfer to savings"
+              value={transferDescription}
+              onChange={(e) => setTransferDescription(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <Button variant="outline" onClick={() => setTransferOpen(false)} disabled={transferMutation.isPending} className="flex-1">Cancel</Button>
+            <Button onClick={handleTransfer} disabled={transferMutation.isPending} className="flex-1">
+              {transferMutation.isPending ? "Transferring..." : "Transfer"}
             </Button>
           </div>
         </div>
