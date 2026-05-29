@@ -45,6 +45,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Part name and SKU are required" }, { status: 400 })
     }
 
+    const [existing] = await db
+      .select({ id: inventory.id })
+      .from(inventory)
+      .where(eq(inventory.sku, sku))
+      .limit(1)
+
+    if (existing) {
+      return NextResponse.json({ error: "A part with this SKU already exists" }, { status: 409 })
+    }
+
     const result = await db.transaction(async (tx) => {
       const [item] = await tx
         .insert(inventory)
@@ -87,10 +97,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ item: result }, { status: 201 })
-  } catch (error: any) {
-    if (error?.code === "23505") {
-      return NextResponse.json({ error: "A part with this SKU already exists" }, { status: 409 })
-    }
+  } catch {
     return NextResponse.json({ error: "Failed to create part" }, { status: 500 })
   }
 }

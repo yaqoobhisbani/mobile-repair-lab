@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { tickets, customers, ticketItems, inventory, accounts, ticketStatusHistory } from "@/db/schema"
+import { tickets, customers, ticketItems, inventory, accounts, ticketStatusHistory, invoices } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { insertTransaction } from "@/db/transactions"
 
@@ -265,6 +265,8 @@ export async function DELETE(
         }
       }
 
+      await tx.delete(ticketStatusHistory).where(eq(ticketStatusHistory.ticketId, id))
+      await tx.delete(invoices).where(eq(invoices.ticketId, id))
       await tx.delete(ticketItems).where(eq(ticketItems.ticketId, id))
       await tx.delete(tickets).where(eq(tickets.id, id))
     })
