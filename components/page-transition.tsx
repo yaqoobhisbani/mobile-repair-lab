@@ -10,7 +10,7 @@ const fadeIn: Variants = {
 
 export function PageTransition({ children }: { children: ReactNode }) {
   return (
-    <motion.div initial="hidden" animate="visible" variants={fadeIn}>
+    <motion.div className="min-w-0" initial="hidden" animate="visible" variants={fadeIn}>
       {children}
     </motion.div>
   )
