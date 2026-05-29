@@ -5,9 +5,9 @@ import { jwtVerify } from "jose"
 const COOKIE_NAME = "mrl_session"
 const publicApiPaths = ["/api/auth/login", "/api/auth/register"]
 
-function getSecret() {
-  return new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-change-in-production")
-}
+const ENCODED_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET ?? (() => { throw new Error("JWT_SECRET environment variable is not set") })(),
+)
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -22,7 +22,7 @@ export async function proxy(request: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, getSecret())
+    await jwtVerify(token, ENCODED_SECRET)
     return NextResponse.next()
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

@@ -7,9 +7,9 @@ import { eq } from "drizzle-orm"
 
 const COOKIE_NAME = "mrl_session"
 
-function getSecret() {
-  return new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-change-in-production")
-}
+const ENCODED_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET ?? (() => { throw new Error("JWT_SECRET environment variable is not set") })(),
+)
 
 export interface JwtPayload {
   userId: number
@@ -28,7 +28,7 @@ export async function signToken(payload: JwtPayload): Promise<string> {
   return new SignJWT({ userId: payload.userId, email: payload.email })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
-    .sign(getSecret())
+    .sign(ENCODED_SECRET)
 }
 
 export async function setAuthCookie(token: string) {
@@ -53,7 +53,7 @@ export async function getCurrentUser() {
   if (!token) return null
 
   try {
-    const { payload } = await jwtVerify(token, getSecret())
+    const { payload } = await jwtVerify(token, ENCODED_SECRET)
     const { userId } = payload as unknown as JwtPayload
 
     const [user] = await db
