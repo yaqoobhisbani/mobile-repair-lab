@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { tickets, ticketItems, inventory, saleOrders, saleItems } from "@/db/schema"
+import { tickets, ticketItems, inventory, saleOrders, saleItems, expenses } from "@/db/schema"
 import { eq, desc, and, gte, lte, or } from "drizzle-orm"
 
 function calcDiscount(
@@ -48,6 +48,10 @@ export async function GET(request: Request) {
 
     const saleDateRange = from && to
       ? [gte(saleOrders.createdAt, new Date(from)), lte(saleOrders.createdAt, new Date(to))]
+      : []
+
+    const expenseDateRange = from && to
+      ? [gte(expenses.date, new Date(from)), lte(expenses.date, new Date(to))]
       : []
 
     const keyFromDate = (d: Date) => {
@@ -230,6 +234,48 @@ export async function GET(request: Request) {
 
     details.sort((a, b) => b.date.getTime() - a.date.getTime())
 
+    // --- Expenses ---
+
+    const expenseConditions = from && to
+      ? [gte(expenses.date, new Date(from)), lte(expenses.date, new Date(to))]
+      : []
+
+    const expenseRows = await db
+      .select({
+        id: expenses.id,
+        amount: expenses.amount,
+        description: expenses.description,
+        category: expenses.category,
+        createdAt: expenses.date,
+      })
+      .from(expenses)
+      .where(and(...expenseConditions))
+      .orderBy(desc(expenses.date))
+
+    const expensesByPeriod = new Map<string, number>()
+    const expenseDetails: {
+      type: "expense"
+      id: string
+      date: Date
+      description: string
+      category: string | null
+      amount: number
+    }[] = []
+
+    for (const row of expenseRows) {
+      const key = keyFromDate(row.createdAt)
+      const amount = parseFloat(row.amount)
+      expensesByPeriod.set(key, (expensesByPeriod.get(key) ?? 0) + amount)
+      expenseDetails.push({
+        type: "expense",
+        id: `exp-${row.id}`,
+        date: row.createdAt,
+        description: row.description,
+        category: row.category,
+        amount,
+      })
+    }
+
     // --- Grouped data ---
 
     const grouped: Record<string, {
@@ -241,6 +287,8 @@ export async function GET(request: Request) {
       salesProfit: number
       totalRevenue: number
       totalProfit: number
+      expenses: number
+      netProfit: number
       ticketCount: number
       saleCount: number
     }> = {}
@@ -252,6 +300,7 @@ export async function GET(request: Request) {
           laborRevenue: 0, laborProfit: 0,
           salesRevenue: 0, salesProfit: 0,
           totalRevenue: 0, totalProfit: 0,
+          expenses: 0, netProfit: 0,
           ticketCount: 0, saleCount: 0,
         }
       }
@@ -271,6 +320,11 @@ export async function GET(request: Request) {
       g.totalProfit += d.profit.total
     }
 
+    for (const [periodKey, g] of Object.entries(grouped)) {
+      g.expenses = r(expensesByPeriod.get(periodKey) ?? 0)
+      g.netProfit = r(g.totalProfit - g.expenses)
+    }
+
     for (const g of Object.values(grouped)) {
       g.partsRevenue = r(g.partsRevenue)
       g.partsProfit = r(g.partsProfit)
@@ -280,6 +334,8 @@ export async function GET(request: Request) {
       g.salesProfit = r(g.salesProfit)
       g.totalRevenue = r(g.totalRevenue)
       g.totalProfit = r(g.totalProfit)
+      g.expenses = r(g.expenses)
+      g.netProfit = r(g.netProfit)
     }
 
     const data = Object.entries(grouped)
@@ -293,6 +349,8 @@ export async function GET(request: Request) {
         salesProfit: g.salesProfit,
         totalRevenue: g.totalRevenue,
         totalProfit: g.totalProfit,
+        expenses: g.expenses,
+        netProfit: g.netProfit,
         ticketCount: g.ticketCount,
         saleCount: g.saleCount,
       }))
@@ -308,6 +366,8 @@ export async function GET(request: Request) {
         totalSalesProfit: acc.totalSalesProfit + r.salesProfit,
         totalRevenue: acc.totalRevenue + r.totalRevenue,
         totalProfit: acc.totalProfit + r.totalProfit,
+        totalExpenses: acc.totalExpenses + r.expenses,
+        totalNetProfit: acc.totalNetProfit + r.netProfit,
         totalTickets: acc.totalTickets + r.ticketCount,
         totalSales: acc.totalSales + r.saleCount,
       }),
@@ -316,11 +376,12 @@ export async function GET(request: Request) {
         totalLaborRevenue: 0, totalLaborProfit: 0,
         totalSalesRevenue: 0, totalSalesProfit: 0,
         totalRevenue: 0, totalProfit: 0,
+        totalExpenses: 0, totalNetProfit: 0,
         totalTickets: 0, totalSales: 0,
       }
     )
 
-    return NextResponse.json({ data, summary, details })
+    return NextResponse.json({ data, summary, details, expenseDetails })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: "Failed to fetch report" }, { status: 500 })
