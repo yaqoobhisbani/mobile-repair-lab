@@ -9,7 +9,7 @@ async function recalcAndSync(
   ticketId: string,
   ticket: { paymentStatus: string; amountPaid: string; paymentAccountId: number | null; laborCost: string | null; discountType: string | null; discountValue: string | null },
 ) {
-  if (ticket.paymentStatus !== "paid") return
+  if (ticket.paymentStatus !== "paid" && ticket.paymentStatus !== "partially_paid") return
 
   const allItems = await tx
     .select({
@@ -35,41 +35,68 @@ async function recalcAndSync(
   }
   const totalAmount = Math.max(0, subtotal - discountAmount)
   const oldPaid = parseFloat(ticket.amountPaid ?? "0")
-  const difference = totalAmount - oldPaid
 
-  if (difference === 0) return
+  if (ticket.paymentStatus === "paid") {
+    const difference = totalAmount - oldPaid
+    if (difference === 0) return
 
-  await tx
-    .update(tickets)
-    .set({ amountPaid: String(totalAmount) })
-    .where(eq(tickets.id, ticketId))
+    await tx
+      .update(tickets)
+      .set({ amountPaid: String(totalAmount) })
+      .where(eq(tickets.id, ticketId))
 
-  if (ticket.paymentAccountId) {
-    const absDiff = Math.abs(difference)
-    if (difference > 0) {
+    if (ticket.paymentAccountId) {
+      const absDiff = Math.abs(difference)
+      if (difference > 0) {
+        await tx
+          .update(accounts)
+          .set({ balance: sql`${accounts.balance} + ${absDiff}` })
+          .where(eq(accounts.id, ticket.paymentAccountId))
+        await insertTransaction(
+          ticket.paymentAccountId,
+          "credit",
+          absDiff,
+          `Auto-adjustment for added parts on Ticket ${ticketId}`,
+          "ticket",
+          ticketId,
+          tx,
+        )
+      } else {
+        await tx
+          .update(accounts)
+          .set({ balance: sql`${accounts.balance} - ${absDiff}` })
+          .where(eq(accounts.id, ticket.paymentAccountId))
+        await insertTransaction(
+          ticket.paymentAccountId,
+          "debit",
+          absDiff,
+          `Auto-adjustment for removed parts on Ticket ${ticketId}`,
+          "ticket",
+          ticketId,
+          tx,
+        )
+      }
+    }
+  } else {
+    const overpaid = oldPaid > totalAmount
+    if (!overpaid) return
+
+    const refund = oldPaid - totalAmount
+    await tx
+      .update(tickets)
+      .set({ amountPaid: String(totalAmount), paymentStatus: "paid" })
+      .where(eq(tickets.id, ticketId))
+
+    if (ticket.paymentAccountId) {
       await tx
         .update(accounts)
-        .set({ balance: sql`${accounts.balance} + ${absDiff}` })
-        .where(eq(accounts.id, ticket.paymentAccountId))
-      await insertTransaction(
-        ticket.paymentAccountId,
-        "credit",
-        absDiff,
-        `Auto-adjustment for added parts on Ticket ${ticketId}`,
-        "ticket",
-        ticketId,
-        tx,
-      )
-    } else {
-      await tx
-        .update(accounts)
-        .set({ balance: sql`${accounts.balance} - ${absDiff}` })
+        .set({ balance: sql`${accounts.balance} - ${refund}` })
         .where(eq(accounts.id, ticket.paymentAccountId))
       await insertTransaction(
         ticket.paymentAccountId,
         "debit",
-        absDiff,
-        `Auto-adjustment for removed parts on Ticket ${ticketId}`,
+        refund,
+        `Refund for removed parts on Ticket ${ticketId}`,
         "ticket",
         ticketId,
         tx,
