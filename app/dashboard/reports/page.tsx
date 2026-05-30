@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, Wrench, PackageCheck, CheckCircle2 } from "lucide-react"
+import { TrendingUp, Wrench, PackageCheck, CheckCircle2, Store } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
@@ -22,6 +24,10 @@ function formatPeriod(dateStr: string, period: string) {
 
 function formatCurrency(n: number) {
   return `Rs. ${n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
 export default function ReportsPage() {
@@ -46,7 +52,7 @@ export default function ReportsPage() {
       default:
         return null
     }
-  }, [datePeriod, referenceDate])
+  }, [referenceDate])
 
   const params = useMemo(() => {
     const range = getDateRange()
@@ -65,11 +71,14 @@ export default function ReportsPage() {
     const d = data?.data ?? []
     return [...d].reverse().map((entry) => ({
       label: formatPeriod(entry.period, datePeriod),
-      "Parts Profit": entry.partsProfit,
-      "Labor Profit": entry.laborProfit,
+      "Parts Earning": entry.partsProfit,
+      "Labor Earning": entry.laborProfit,
+      "Sales Earning": entry.salesProfit,
       total: entry.totalProfit,
     }))
   }, [data, datePeriod])
+
+  const details = useMemo(() => data?.details ?? [], [data])
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null
@@ -90,8 +99,8 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">Profit Report</h1>
-          <p className="text-sm text-muted-foreground">Track earnings from labor and parts.</p>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">Earning Report</h1>
+          <p className="text-sm text-muted-foreground">Track earnings from labor, parts, and sales.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()) }}>
@@ -127,22 +136,24 @@ export default function ReportsPage() {
 
       {isLoading ? (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-24 w-full rounded-xl" />
           </div>
           <Skeleton className="h-[400px] w-full rounded-xl" />
+          <Skeleton className="h-[300px] w-full rounded-xl" />
         </div>
       ) : (
         <>
-          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StaggerItem>
               <HoverCard>
                 <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Profit</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Earning</CardTitle>
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                   </CardHeader>
                   <CardContent>
@@ -155,7 +166,7 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Parts Profit</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Parts Earning</CardTitle>
                     <PackageCheck className="h-4 w-4 text-blue-500" />
                   </CardHeader>
                   <CardContent>
@@ -168,7 +179,7 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Labor Profit</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Labor Earning</CardTitle>
                     <Wrench className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
@@ -179,9 +190,22 @@ export default function ReportsPage() {
             </StaggerItem>
             <StaggerItem>
               <HoverCard>
+                <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/60 dark:to-background border-orange-100 dark:border-orange-900/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Sales Earning</CardTitle>
+                    <Store className="h-4 w-4 text-orange-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold"><PrivacyAmount>{formatCurrency(data?.summary?.totalSalesProfit ?? 0)}</PrivacyAmount></p>
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </StaggerItem>
+            <StaggerItem>
+              <HoverCard>
                 <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Tickets Completed</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Jobs Completed</CardTitle>
                     <CheckCircle2 className="h-4 w-4 text-amber-500" />
                   </CardHeader>
                   <CardContent>
@@ -194,15 +218,15 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Profit Breakdown</CardTitle>
+              <CardTitle>Earning Breakdown</CardTitle>
               <CardDescription>
-                {datePeriod === "daily" ? "Daily" : datePeriod === "monthly" ? "Monthly" : "Yearly"} profit from parts and labor.
+                {datePeriod === "daily" ? "Daily" : datePeriod === "monthly" ? "Monthly" : "Yearly"} earning from parts, labor, and sales.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {chartData.length === 0 ? (
                 <div className="flex items-center justify-center h-[300px] text-sm text-muted-foreground">
-                  No completed tickets with labor cost data found in this period.
+                  No completed jobs or sales found in this period.
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={400}>
@@ -212,11 +236,65 @@ export default function ReportsPage() {
                     <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
-                    <Bar dataKey="Parts Profit" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Labor Profit" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Parts Earning" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Labor Earning" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Sales Earning" fill="#f97316" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Detail Breakdown</CardTitle>
+              <CardDescription>Individual ticket and sale earnings in this period.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 sm:p-6">
+              <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Parts Earning</TableHead>
+                    <TableHead className="text-right">Labor Earning</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {details.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                        No completed jobs or sales in this period.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    details.map((d, i) => (
+                      <TableRow key={`${d.type}-${d.id}-${i}`}>
+                        <TableCell className="whitespace-nowrap text-sm">{formatDate(d.date)}</TableCell>
+                        <TableCell>
+                          <Badge variant={d.type === "ticket" ? "secondary" : "outline"}>
+                            {d.type === "ticket" ? "Ticket" : "Sale"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">{d.description}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {d.partsProfit > 0 ? <PrivacyAmount>{formatCurrency(d.partsProfit)}</PrivacyAmount> : "—"}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {d.laborProfit > 0 ? <PrivacyAmount>{formatCurrency(d.laborProfit)}</PrivacyAmount> : "—"}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap font-medium">
+                          <PrivacyAmount>{formatCurrency(d.totalProfit)}</PrivacyAmount>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+              </div>
             </CardContent>
           </Card>
         </>
