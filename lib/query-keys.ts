@@ -29,4 +29,7 @@ export const queryKeys = {
   reports: {
     profit: (params: Record<string, string>) => ["reports", "profit", params] as const,
   },
+  dashboard: {
+    revenue: ["dashboard", "revenue"] as const,
+  },
 }

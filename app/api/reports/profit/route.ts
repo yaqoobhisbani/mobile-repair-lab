@@ -3,6 +3,34 @@ import { db } from "@/db"
 import { tickets, ticketItems, inventory, saleOrders, saleItems } from "@/db/schema"
 import { eq, desc, and, gte, lte, or } from "drizzle-orm"
 
+function calcDiscount(
+  subtotal: number,
+  parts: number,
+  labor: number,
+  discountType: string | null,
+  discountValue: string | null,
+) {
+  if (!discountType || !discountValue) return { discountAmount: 0, partsDiscount: 0, laborDiscount: 0 }
+  const val = parseFloat(discountValue)
+  if (val <= 0) return { discountAmount: 0, partsDiscount: 0, laborDiscount: 0 }
+
+  const discountAmount = discountType === "percentage"
+    ? subtotal * val / 100
+    : val
+
+  let partsDiscount = 0
+  let laborDiscount = 0
+  if (discountAmount > 0 && subtotal > 0) {
+    partsDiscount = discountAmount * (parts / subtotal)
+    laborDiscount = discountAmount * (labor / subtotal)
+  }
+  return { discountAmount, partsDiscount, laborDiscount }
+}
+
+function r(v: number) {
+  return Math.round(v * 100) / 100
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -46,6 +74,8 @@ export async function GET(request: Request) {
         brand: tickets.brand,
         model: tickets.model,
         laborCost: tickets.laborCost,
+        discountType: tickets.discountType,
+        discountValue: tickets.discountValue,
         createdAt: tickets.createdAt,
         itemSellingPrice: inventory.sellingPrice,
         itemCostPrice: inventory.costPrice,
@@ -62,6 +92,8 @@ export async function GET(request: Request) {
       brand: string
       model: string
       laborCost: number
+      discountType: string | null
+      discountValue: string | null
       createdAt: Date
       partsRevenue: number
       partsProfit: number
@@ -74,6 +106,8 @@ export async function GET(request: Request) {
           brand: row.brand,
           model: row.model,
           laborCost: parseFloat(row.laborCost ?? "0"),
+          discountType: row.discountType,
+          discountValue: row.discountValue,
           createdAt: row.createdAt,
           partsRevenue: 0,
           partsProfit: 0,
@@ -101,26 +135,27 @@ export async function GET(request: Request) {
     }[] = []
 
     for (const [, t] of ticketMap) {
-      const partsRevenue = Math.round(t.partsRevenue * 100) / 100
-      const partsProfit = Math.round(t.partsProfit * 100) / 100
-      const laborRevenue = t.laborCost
-      const laborProfit = t.laborCost
+      const subtotal = t.partsRevenue + t.laborCost
+      const { discountAmount, partsDiscount, laborDiscount } = calcDiscount(
+        subtotal, t.partsRevenue, t.laborCost, t.discountType, t.discountValue,
+      )
+
+      const partsRev = r(t.partsRevenue - partsDiscount)
+      const laborRev = r(t.laborCost - laborDiscount)
+      const totalRev = r(subtotal - discountAmount)
+
+      const partsProf = r(t.partsProfit - partsDiscount)
+      const laborProf = r(t.laborCost - laborDiscount)
+      const totalProf = r((t.partsProfit + t.laborCost) - discountAmount)
+
       details.push({
         type: "ticket",
         id: t.ticketId,
         date: t.createdAt,
         period: keyFromDate(t.createdAt),
         description: `${t.brand} ${t.model}`,
-        revenue: {
-          parts: partsRevenue,
-          labor: laborRevenue,
-          total: Math.round((partsRevenue + laborRevenue) * 100) / 100,
-        },
-        profit: {
-          parts: partsProfit,
-          labor: laborProfit,
-          total: Math.round((partsProfit + laborProfit) * 100) / 100,
-        },
+        revenue: { parts: partsRev, labor: laborRev, total: totalRev },
+        profit: { parts: partsProf, labor: laborProf, total: totalProf },
       })
     }
 
@@ -130,6 +165,8 @@ export async function GET(request: Request) {
       .select({
         id: saleOrders.id,
         customerName: saleOrders.customerName,
+        discountType: saleOrders.discountType,
+        discountValue: saleOrders.discountValue,
         createdAt: saleOrders.createdAt,
         itemUnitPrice: saleItems.unitPrice,
         itemQuantity: saleItems.quantity,
@@ -143,6 +180,8 @@ export async function GET(request: Request) {
 
     const saleMap = new Map<string, {
       customerName: string | null
+      discountType: string | null
+      discountValue: string | null
       createdAt: Date
       revenue: number
       profit: number
@@ -152,6 +191,8 @@ export async function GET(request: Request) {
       if (!saleMap.has(row.id)) {
         saleMap.set(row.id, {
           customerName: row.customerName,
+          discountType: row.discountType,
+          discountValue: row.discountValue,
           createdAt: row.createdAt,
           revenue: 0,
           profit: 0,
@@ -169,8 +210,13 @@ export async function GET(request: Request) {
     }
 
     for (const [id, s] of saleMap) {
-      const revenue = Math.round(s.revenue * 100) / 100
-      const profit = Math.round(s.profit * 100) / 100
+      const { discountAmount } = calcDiscount(
+        s.revenue, s.revenue, 0, s.discountType, s.discountValue,
+      )
+
+      const revenue = r(s.revenue - discountAmount)
+      const profit = r(s.profit - discountAmount)
+
       details.push({
         type: "sale",
         id,
@@ -226,14 +272,14 @@ export async function GET(request: Request) {
     }
 
     for (const g of Object.values(grouped)) {
-      g.partsRevenue = Math.round(g.partsRevenue * 100) / 100
-      g.partsProfit = Math.round(g.partsProfit * 100) / 100
-      g.laborRevenue = Math.round(g.laborRevenue * 100) / 100
-      g.laborProfit = Math.round(g.laborProfit * 100) / 100
-      g.salesRevenue = Math.round(g.salesRevenue * 100) / 100
-      g.salesProfit = Math.round(g.salesProfit * 100) / 100
-      g.totalRevenue = Math.round(g.totalRevenue * 100) / 100
-      g.totalProfit = Math.round(g.totalProfit * 100) / 100
+      g.partsRevenue = r(g.partsRevenue)
+      g.partsProfit = r(g.partsProfit)
+      g.laborRevenue = r(g.laborRevenue)
+      g.laborProfit = r(g.laborProfit)
+      g.salesRevenue = r(g.salesRevenue)
+      g.salesProfit = r(g.salesProfit)
+      g.totalRevenue = r(g.totalRevenue)
+      g.totalProfit = r(g.totalProfit)
     }
 
     const data = Object.entries(grouped)

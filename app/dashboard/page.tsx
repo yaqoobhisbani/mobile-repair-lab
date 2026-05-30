@@ -16,6 +16,7 @@ import { useInventory } from "@/hooks/queries/use-inventory"
 import { useAccounts } from "@/hooks/queries/use-accounts"
 import { useExpenses } from "@/hooks/queries/use-expenses"
 import { useSales } from "@/hooks/queries/use-sales"
+import { useDashboardRevenue } from "@/hooks/queries/use-dashboard-revenue"
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -27,8 +28,9 @@ export default function DashboardOverview() {
   const { data: accounts, isLoading: accountsLoading } = useAccounts()
   const { data: expenses, isLoading: expensesLoading } = useExpenses()
   const { data: sales, isLoading: salesLoading } = useSales()
+  const { data: revenue, isLoading: revenueLoading } = useDashboardRevenue()
 
-  const loading = ticketsLoading || inventoryLoading || accountsLoading || expensesLoading || salesLoading
+  const loading = ticketsLoading || inventoryLoading || accountsLoading || expensesLoading || salesLoading || revenueLoading
 
   const stats = useMemo(() => {
     const t = tickets ?? []
@@ -58,24 +60,15 @@ export default function DashboardOverview() {
     const totalBalance = a.reduce((s, ac) => s + parseFloat(ac.balance), 0)
 
     const s = sales ?? []
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const yearStart = new Date(now.getFullYear(), 0, 1)
-    const todaySales = s.filter((sale) => new Date(sale.createdAt) >= todayStart).length
-    const todayRevenue = s
-      .filter((sale) => new Date(sale.createdAt) >= todayStart)
-      .reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
-    const monthSales = s.filter((sale) => new Date(sale.createdAt) >= monthStart).length
-    const monthRevenue = s
-      .filter((sale) => new Date(sale.createdAt) >= monthStart)
-      .reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
-    const yearSales = s.filter((sale) => new Date(sale.createdAt) >= yearStart).length
-    const yearRevenue = s
-      .filter((sale) => new Date(sale.createdAt) >= yearStart)
-      .reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
-    const totalRevenue = s.reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0)
-    const totalSales = s.length
+    const r = revenue
+    const todayRevenue = r?.today.total ?? 0
+    const monthRevenue = r?.month.total ?? 0
+    const yearRevenue = r?.year.total ?? 0
+    const totalRevenue = r?.all.total ?? 0
+    const todayTicketRevenue = r?.today.tickets ?? 0
+    const todaySaleRevenue = r?.today.sales ?? 0
 
-    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses: monthExpensesTotal, monthExpenseCount, totalBalance, totalTickets: t.length, todaySales, todayRevenue, monthSales, monthRevenue, yearSales, yearRevenue, totalRevenue, totalSales }
+    return { active, ready, repairing, awaitingParts, totalStock, uniqueParts, lowStock, outOfStock, monthExpenses: monthExpensesTotal, monthExpenseCount, totalBalance, totalTickets: t.length, todayRevenue, monthRevenue, yearRevenue, totalRevenue, todayTicketRevenue, todaySaleRevenue }
   }, [tickets, inventory, accounts, expenses, sales])
 
   const recentTickets = (tickets ?? []).slice(0, 5)
@@ -234,7 +227,7 @@ export default function DashboardOverview() {
             <HoverCard>
               <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Today Sales</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Today Revenue</CardTitle>
                   <Receipt className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
@@ -242,7 +235,7 @@ export default function DashboardOverview() {
                     Rs. <PrivacyAmount><AnimatedCounter to={stats.todayRevenue} decimals={2} /></PrivacyAmount>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    <AnimatedCounter to={stats.todaySales} /> sale{stats.todaySales !== 1 ? "s" : ""} today
+                    Rs. {stats.todayTicketRevenue.toFixed(0)} tickets + Rs. {stats.todaySaleRevenue.toFixed(0)} sales
                   </p>
                 </CardContent>
               </Card>
@@ -259,7 +252,7 @@ export default function DashboardOverview() {
                   <div className="text-2xl font-bold">
                     Rs. <PrivacyAmount><AnimatedCounter to={stats.monthRevenue} decimals={2} /></PrivacyAmount>
                   </div>
-                  <p className="text-xs text-muted-foreground">{stats.monthSales} sales this month</p>
+                  <p className="text-xs text-muted-foreground">Includes repair tickets &amp; OTC sales</p>
                 </CardContent>
               </Card>
             </HoverCard>
