@@ -2,20 +2,28 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 
-export interface ProfitEntry {
+export interface ReportEntry {
   period: string
+  partsRevenue: number
   partsProfit: number
+  laborRevenue: number
   laborProfit: number
+  salesRevenue: number
   salesProfit: number
+  totalRevenue: number
   totalProfit: number
   ticketCount: number
   saleCount: number
 }
 
-export interface ProfitSummary {
+export interface ReportSummary {
+  totalPartsRevenue: number
   totalPartsProfit: number
+  totalLaborRevenue: number
   totalLaborProfit: number
+  totalSalesRevenue: number
   totalSalesProfit: number
+  totalRevenue: number
   totalProfit: number
   totalTickets: number
   totalSales: number
@@ -26,9 +34,8 @@ export interface DetailEntry {
   id: string
   date: string
   description: string
-  partsProfit: number
-  laborProfit: number
-  totalProfit: number
+  revenue: { parts: number; labor: number; total: number }
+  profit: { parts: number; labor: number; total: number }
 }
 
 export function useProfitReport(params: Record<string, string>) {
@@ -36,7 +43,7 @@ export function useProfitReport(params: Record<string, string>) {
   return useQuery({
     queryKey: queryKeys.reports.profit(params),
     queryFn: () =>
-      api<{ data: ProfitEntry[]; summary: ProfitSummary; details: DetailEntry[] }>(
+      api<{ data: ReportEntry[]; summary: ReportSummary; details: DetailEntry[] }>(
         `/api/reports/profit?${searchParams.toString()}`
       ),
     staleTime: 0,

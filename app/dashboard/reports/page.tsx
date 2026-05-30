@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, Wrench, PackageCheck, CheckCircle2, Store } from "lucide-react"
+import { TrendingUp, Wrench, PackageCheck, CheckCircle2, Store, DollarSign, PiggyBank } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
@@ -14,6 +15,7 @@ import { DatePicker } from "@/components/date-picker"
 import { MonthPicker } from "@/components/month-picker"
 import { useProfitReport } from "@/hooks/queries/use-profit-report"
 import { PrivacyAmount } from "@/components/privacy-amount"
+import { cn } from "@/lib/utils"
 
 function formatPeriod(dateStr: string, period: string) {
   const d = new Date(dateStr)
@@ -33,6 +35,7 @@ function formatDate(dateStr: string) {
 export default function ReportsPage() {
   const [datePeriod, setDatePeriod] = useState("monthly")
   const [referenceDate, setReferenceDate] = useState(new Date())
+  const [showProfit, setShowProfit] = useState(true)
 
   const getDateRange = useCallback(() => {
     const now = referenceDate
@@ -71,14 +74,16 @@ export default function ReportsPage() {
     const d = data?.data ?? []
     return [...d].reverse().map((entry) => ({
       label: formatPeriod(entry.period, datePeriod),
-      "Parts Earning": entry.partsProfit,
-      "Labor Earning": entry.laborProfit,
-      "Sales Earning": entry.salesProfit,
-      total: entry.totalProfit,
+      Parts: showProfit ? entry.partsProfit : entry.partsRevenue,
+      Labor: showProfit ? entry.laborProfit : entry.laborRevenue,
+      Sales: showProfit ? entry.salesProfit : entry.salesRevenue,
     }))
-  }, [data, datePeriod])
+  }, [data, datePeriod, showProfit])
 
   const details = useMemo(() => data?.details ?? [], [data])
+
+  const totalRevenue = data?.summary?.totalRevenue ?? 0
+  const totalProfit = data?.summary?.totalProfit ?? 0
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null
@@ -99,10 +104,38 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">Earning Report</h1>
-          <p className="text-sm text-muted-foreground">Track earnings from labor, parts, and sales.</p>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+            {showProfit ? "Profit Report" : "Revenue Report"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {showProfit
+              ? "Net earnings after deducting parts cost."
+              : "Total amount billed to customers."}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-lg border border-input bg-white dark:bg-card p-0.5">
+            <button
+              onClick={() => setShowProfit(false)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                !showProfit ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <DollarSign className="h-3.5 w-3.5" />
+              Revenue
+            </button>
+            <button
+              onClick={() => setShowProfit(true)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                showProfit ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <PiggyBank className="h-3.5 w-3.5" />
+              Profit
+            </button>
+          </div>
           <Select value={datePeriod} onValueChange={(v) => { setDatePeriod(v); setReferenceDate(new Date()) }}>
             <SelectTrigger className="w-28 sm:w-32 bg-white dark:bg-card">
               <SelectValue />
@@ -153,11 +186,15 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Earning</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {showProfit ? "Total Profit" : "Total Revenue"}
+                    </CardTitle>
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-emerald-600"><PrivacyAmount>{formatCurrency(data?.summary?.totalProfit ?? 0)}</PrivacyAmount></p>
+                    <p className="text-2xl font-bold text-emerald-600">
+                      <PrivacyAmount>{formatCurrency(showProfit ? totalProfit : totalRevenue)}</PrivacyAmount>
+                    </p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -166,11 +203,15 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Parts Earning</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {showProfit ? "Parts Profit" : "Parts Revenue"}
+                    </CardTitle>
                     <PackageCheck className="h-4 w-4 text-blue-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold"><PrivacyAmount>{formatCurrency(data?.summary?.totalPartsProfit ?? 0)}</PrivacyAmount></p>
+                    <p className="text-2xl font-bold">
+                      <PrivacyAmount>{formatCurrency(showProfit ? data?.summary?.totalPartsProfit ?? 0 : data?.summary?.totalPartsRevenue ?? 0)}</PrivacyAmount>
+                    </p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -179,11 +220,15 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Labor Earning</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {showProfit ? "Labor Profit" : "Labor Revenue"}
+                    </CardTitle>
                     <Wrench className="h-4 w-4 text-violet-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold"><PrivacyAmount>{formatCurrency(data?.summary?.totalLaborProfit ?? 0)}</PrivacyAmount></p>
+                    <p className="text-2xl font-bold">
+                      <PrivacyAmount>{formatCurrency(showProfit ? data?.summary?.totalLaborProfit ?? 0 : data?.summary?.totalLaborRevenue ?? 0)}</PrivacyAmount>
+                    </p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -192,11 +237,15 @@ export default function ReportsPage() {
               <HoverCard>
                 <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/60 dark:to-background border-orange-100 dark:border-orange-900/50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Sales Earning</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {showProfit ? "Sales Profit" : "Sales Revenue"}
+                    </CardTitle>
                     <Store className="h-4 w-4 text-orange-500" />
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold"><PrivacyAmount>{formatCurrency(data?.summary?.totalSalesProfit ?? 0)}</PrivacyAmount></p>
+                    <p className="text-2xl font-bold">
+                      <PrivacyAmount>{formatCurrency(showProfit ? data?.summary?.totalSalesProfit ?? 0 : data?.summary?.totalSalesRevenue ?? 0)}</PrivacyAmount>
+                    </p>
                   </CardContent>
                 </Card>
               </HoverCard>
@@ -218,9 +267,9 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Earning Breakdown</CardTitle>
+              <CardTitle>{showProfit ? "Profit" : "Revenue"} Breakdown</CardTitle>
               <CardDescription>
-                {datePeriod === "daily" ? "Daily" : datePeriod === "monthly" ? "Monthly" : "Yearly"} earning from parts, labor, and sales.
+                {datePeriod === "daily" ? "Daily" : datePeriod === "monthly" ? "Monthly" : "Yearly"} {showProfit ? "profit" : "revenue"} from parts, labor, and sales.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -236,9 +285,9 @@ export default function ReportsPage() {
                     <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
-                    <Bar dataKey="Parts Earning" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Labor Earning" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Sales Earning" fill="#f97316" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Parts" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Labor" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Sales" fill="#f97316" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -248,7 +297,7 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Detail Breakdown</CardTitle>
-              <CardDescription>Individual ticket and sale earnings in this period.</CardDescription>
+              <CardDescription>Individual ticket and sale {showProfit ? "profit" : "revenue"} in this period.</CardDescription>
             </CardHeader>
             <CardContent className="p-0 sm:p-6">
               <div className="overflow-x-auto">
@@ -258,9 +307,9 @@ export default function ReportsPage() {
                     <TableHead>Date</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Parts Earning</TableHead>
-                    <TableHead className="text-right">Labor Earning</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">{showProfit ? "Parts Profit" : "Parts Revenue"}</TableHead>
+                    <TableHead className="text-right">{showProfit ? "Labor Profit" : "Labor Revenue"}</TableHead>
+                    <TableHead className="text-right">{showProfit ? "Total Profit" : "Total Revenue"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -279,15 +328,28 @@ export default function ReportsPage() {
                             {d.type === "ticket" ? "Ticket" : "Sale"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{d.description}</TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
-                          {d.partsProfit > 0 ? <PrivacyAmount>{formatCurrency(d.partsProfit)}</PrivacyAmount> : "—"}
+                        <TableCell className="max-w-[200px] truncate">
+                          <Link
+                            href={d.type === "ticket" ? `/dashboard/tickets/${d.id}` : `/dashboard/sales/${d.id}`}
+                            className="hover:underline font-medium"
+                          >
+                            {d.description}
+                          </Link>
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
-                          {d.laborProfit > 0 ? <PrivacyAmount>{formatCurrency(d.laborProfit)}</PrivacyAmount> : "—"}
+                          {(() => {
+                            const val = showProfit ? d.profit.parts : d.revenue.parts
+                            return val > 0 ? <PrivacyAmount>{formatCurrency(val)}</PrivacyAmount> : "—"
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {(() => {
+                            const val = showProfit ? d.profit.labor : d.revenue.labor
+                            return val > 0 ? <PrivacyAmount>{formatCurrency(val)}</PrivacyAmount> : "—"
+                          })()}
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap font-medium">
-                          <PrivacyAmount>{formatCurrency(d.totalProfit)}</PrivacyAmount>
+                          <PrivacyAmount>{formatCurrency(showProfit ? d.profit.total : d.revenue.total)}</PrivacyAmount>
                         </TableCell>
                       </TableRow>
                     ))
