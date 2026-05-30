@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { tickets, customers, ticketItems, inventory, accounts, ticketStatusHistory, invoices } from "@/db/schema"
+import { tickets, customers, ticketItems, inventory, accounts, ticketStatusHistory, invoices, invoiceItems } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { insertTransaction } from "@/db/transactions"
 
@@ -210,6 +210,78 @@ export async function PUT(
         }
       }
 
+      if (paymentStatus === "paid" && current.paymentStatus !== "paid") {
+        const invItems = await tx
+          .select({
+            partName: inventory.partName,
+            sku: inventory.sku,
+            sellingPrice: inventory.sellingPrice,
+            quantityUsed: ticketItems.quantityUsed,
+          })
+          .from(ticketItems)
+          .leftJoin(inventory, eq(ticketItems.inventoryId, inventory.id))
+          .where(eq(ticketItems.ticketId, id))
+
+        let pm: string | null = null
+        if (newAccountId) {
+          const [acct] = await tx
+            .select({ type: accounts.type })
+            .from(accounts)
+            .where(eq(accounts.id, newAccountId))
+            .limit(1)
+          if (acct) pm = acct.type === "cash" ? "cash" : "card"
+        }
+
+        let invoiceId: number
+        const [existing] = await tx
+          .select({ id: invoices.id })
+          .from(invoices)
+          .where(eq(invoices.ticketId, id))
+          .limit(1)
+
+        if (existing) {
+          invoiceId = existing.id
+          await tx.delete(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId))
+          await tx
+            .update(invoices)
+            .set({
+              totalAmount: String(totalAmount),
+              paymentStatus: "paid",
+              paymentMethod: pm as any,
+              laborCost: resolvedLaborCost > 0 ? String(resolvedLaborCost) : null,
+              discountType: resolvedDiscountType || null,
+              discountValue: resolvedDiscountValue > 0 ? String(resolvedDiscountValue) : null,
+            })
+            .where(eq(invoices.id, invoiceId))
+        } else {
+          const [inv] = await tx
+            .insert(invoices)
+            .values({
+              ticketId: id,
+              paymentStatus: "paid",
+              paymentMethod: pm as any,
+              totalAmount: String(totalAmount),
+              laborCost: resolvedLaborCost > 0 ? String(resolvedLaborCost) : null,
+              discountType: resolvedDiscountType || null,
+              discountValue: resolvedDiscountValue > 0 ? String(resolvedDiscountValue) : null,
+            })
+            .returning({ id: invoices.id })
+          invoiceId = inv.id
+        }
+
+        if (invItems.length > 0) {
+          await tx.insert(invoiceItems).values(
+            invItems.map((item) => ({
+              invoiceId,
+              partName: item.partName ?? "Unknown",
+              sku: item.sku ?? "",
+              unitPrice: item.sellingPrice ?? "0",
+              quantity: item.quantityUsed,
+            }))
+          )
+        }
+      }
+
       return t
     })
 
@@ -265,6 +337,14 @@ export async function DELETE(
         }
       }
 
+      const [delInv] = await tx
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(eq(invoices.ticketId, id))
+        .limit(1)
+      if (delInv) {
+        await tx.delete(invoiceItems).where(eq(invoiceItems.invoiceId, delInv.id))
+      }
       await tx.delete(ticketStatusHistory).where(eq(ticketStatusHistory.ticketId, id))
       await tx.delete(invoices).where(eq(invoices.ticketId, id))
       await tx.delete(ticketItems).where(eq(ticketItems.ticketId, id))

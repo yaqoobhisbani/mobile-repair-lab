@@ -8,6 +8,7 @@ async function clear() {
     TRUNCATE TABLE
       ticket_items,
       ticket_status_history,
+      invoice_items,
       invoices,
       sale_items,
       transactions,

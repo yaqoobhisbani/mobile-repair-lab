@@ -125,7 +125,21 @@ export const invoices = pgTable("invoices", {
   paymentStatus: paymentStatusEnum("payment_status").default("unpaid").notNull(),
   paymentMethod: paymentMethodEnum("payment_method"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  laborCost: decimal("labor_cost", { precision: 10, scale: 2 }),
+  discountType: varchar("discount_type", { length: 20 }),
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }),
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
+})
+
+export const invoiceItems = pgTable("invoice_items", {
+  id: serial("id").primaryKey(),
+  invoiceId: integer("invoice_id")
+    .notNull()
+    .references(() => invoices.id),
+  partName: varchar("part_name", { length: 255 }).notNull(),
+  sku: varchar("sku", { length: 100 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  quantity: integer("quantity").notNull().default(1),
 })
 
 export const expenses = pgTable("expenses", {

@@ -32,4 +32,7 @@ export const queryKeys = {
   dashboard: {
     revenue: ["dashboard", "revenue"] as const,
   },
+  invoices: {
+    byTicket: (ticketId: string) => ["invoices", ticketId] as const,
+  },
 }
