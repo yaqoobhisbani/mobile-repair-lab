@@ -10,6 +10,7 @@ import { Loader2, Plus, Search, Trash2, ShoppingCart, Check, X } from "lucide-re
 import { toast } from "sonner"
 import { useInventory } from "@/hooks/queries/use-inventory"
 import { useAccounts } from "@/hooks/queries/use-accounts"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { useCustomers } from "@/hooks/queries/use-customers"
 import { useCreateCustomer } from "@/hooks/mutations/use-create-customer"
 import { useCreateSale, type SaleItemInput } from "@/hooks/mutations/use-create-sale"
@@ -396,7 +397,7 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
                         <span className="text-xs text-muted-foreground">{part.sku}</span>
                       </div>
                       <div className="text-right text-xs shrink-0">
-                        <div>{part.sellingPrice ? `Rs. ${part.sellingPrice}` : "\u2014"}</div>
+                        <div>{part.sellingPrice ? <PrivacyAmount>Rs. {part.sellingPrice}</PrivacyAmount> : "\u2014"}</div>
                         <div>Stock: {part.stockQty}</div>
                       </div>
                     </button>
@@ -453,9 +454,9 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right text-sm">Rs. {item.unitPrice.toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-sm"><PrivacyAmount>Rs. {item.unitPrice.toFixed(2)}</PrivacyAmount></TableCell>
                         <TableCell className="text-right text-sm font-medium">
-                          Rs. {(item.unitPrice * item.quantity).toFixed(2)}
+                          <PrivacyAmount>Rs. {(item.unitPrice * item.quantity).toFixed(2)}</PrivacyAmount>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeFromCart(item.inventoryId)}>
@@ -523,7 +524,7 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
             <SelectContent>
               {accounts.map((a: any) => (
                 <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name} ({a.type === "cash" ? "Cash" : "Bank"}) {"\u2014"} Rs. {parseFloat(a.balance).toLocaleString()}
+                  {a.name} ({a.type === "cash" ? "Cash" : "Bank"}) {"\u2014"} <PrivacyAmount>Rs. {parseFloat(a.balance).toLocaleString()}</PrivacyAmount>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -536,18 +537,18 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
           <div className="space-y-1">
             <div className="flex items-center justify-between text-sm">
               <span>Subtotal</span>
-              <span>Rs. {cartTotal.toFixed(2)}</span>
+              <span><PrivacyAmount>Rs. {cartTotal.toFixed(2)}</PrivacyAmount></span>
             </div>
             {discountAmount > 0 && (
               <div className="flex items-center justify-between text-sm text-green-600">
                 <span>Discount</span>
-                <span>- Rs. {discountAmount.toFixed(2)}</span>
+                <span>- <PrivacyAmount>Rs. {discountAmount.toFixed(2)}</PrivacyAmount></span>
               </div>
             )}
             <div className="flex items-center justify-between pt-1 border-t">
               <span className="text-sm font-medium">Total Amount</span>
               <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
-                Rs. {netTotal.toFixed(2)}
+                <PrivacyAmount>Rs. {netTotal.toFixed(2)}</PrivacyAmount>
               </span>
             </div>
           </div>
@@ -566,7 +567,7 @@ export function CreateSaleForm({ onSuccess, onCancel }: CreateSaleFormProps) {
           {saving ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processing...</>
           ) : (
-            <><ShoppingCart className="h-4 w-4 mr-2" />Complete Sale (Rs. {netTotal.toFixed(2)})</>
+            <><ShoppingCart className="h-4 w-4 mr-2" />Complete Sale (<PrivacyAmount>Rs. {netTotal.toFixed(2)}</PrivacyAmount>)</>
           )}
         </Button>
       </div>

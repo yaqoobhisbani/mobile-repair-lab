@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -180,14 +181,14 @@ export function EditInventoryForm({ itemId, onSuccess, onCancel }: EditInventory
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name} (Rs. {parseFloat(a.balance).toLocaleString()})
+                  {a.name} (<PrivacyAmount>Rs. {parseFloat(a.balance).toLocaleString()}</PrivacyAmount>)
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {extraCost > 0 && formData.accountId && (
             <p className="text-xs text-muted-foreground">
-              Rs. {extraCost.toLocaleString()} will be deducted for {increase} additional unit{increase > 1 ? "s" : ""}.
+              <PrivacyAmount>Rs. {extraCost.toLocaleString()}</PrivacyAmount> will be deducted for {increase} additional unit{increase > 1 ? "s" : ""}.
             </p>
           )}
         </div>

@@ -3,6 +3,10 @@ import { render, screen, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { AddPartDialog } from "@/components/add-part-dialog"
 
+vi.mock("@/lib/privacy-mode-context", () => ({
+  usePrivacyMode: () => ({ privacyMode: false, toggle: vi.fn() }),
+}))
+
 const mockParts = [
   { id: 1, partName: "Screen", sku: "SCR-001", stockQty: 10, sellingPrice: "5000" },
   { id: 2, partName: "Battery", sku: "BAT-002", stockQty: 0, sellingPrice: "1500" },

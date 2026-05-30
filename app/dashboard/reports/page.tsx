@@ -583,7 +583,7 @@ export default function ReportsPage() {
                           <TableHead>Type</TableHead>
                         )}
                         <TableHead>Description</TableHead>
-                        {(detailType === "expense" || detailType === "all") && (
+                        {detailType === "expense" && (
                           <TableHead>Category</TableHead>
                         )}
                         {detailType !== "expense" && (
@@ -670,9 +670,7 @@ export default function ReportsPage() {
                                 </Link>
                               </TableCell>
                             )}
-                            {(detailType === "expense" ||
-                              (detailType === "all" &&
-                                d.type === "expense")) && (
+                            {detailType === "expense" && (
                               <TableCell>
                                 {d.category ? (
                                   <Badge variant="outline" className="text-xs">

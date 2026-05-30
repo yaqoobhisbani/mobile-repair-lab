@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { CreateSaleForm } from "@/components/forms/create-sale-form"
 
+vi.mock("@/lib/privacy-mode-context", () => ({
+  usePrivacyMode: () => ({ privacyMode: false, toggle: vi.fn() }),
+}))
+
 vi.mock("@/hooks/queries/use-inventory", () => ({
   useInventory: () => ({
     data: [

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -132,15 +133,15 @@ export function CreateExpenseForm({ onSuccess, onCancel }: CreateExpenseFormProp
           <SelectContent>
             {accounts.map((a) => (
               <SelectItem key={a.id} value={String(a.id)}>
-                {a.name} (Rs. {parseFloat(a.balance).toFixed(0)})
+                {a.name} (<PrivacyAmount>Rs. {parseFloat(a.balance).toFixed(0)}</PrivacyAmount>)
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         {selectedAccount && (
           <p className="text-xs text-muted-foreground">
-            Balance after expense: Rs.{" "}
-            {Math.max(0, parseFloat(selectedAccount.balance) - parseFloat(amount || "0")).toFixed(2)}
+            Balance after expense: <PrivacyAmount>Rs.{" "}
+            {Math.max(0, parseFloat(selectedAccount.balance) - parseFloat(amount || "0")).toFixed(2)}</PrivacyAmount>
           </p>
         )}
       </div>

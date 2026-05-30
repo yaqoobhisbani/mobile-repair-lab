@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Loader2, Printer } from "lucide-react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { capitalize } from "@/lib/utils"
 import { useTicket } from "@/hooks/queries/use-ticket"
 import { useSettings } from "@/hooks/queries/use-settings"
@@ -146,9 +147,9 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                       <p className="text-xs text-muted-foreground">{item.sku}</p>
                     </td>
                     <td className="py-3 text-right">{item.quantityUsed}</td>
-                    <td className="py-3 text-right">{item.sellingPrice ? `${sym} ${item.sellingPrice}` : "—"}</td>
+                    <td className="py-3 text-right">{item.sellingPrice ? <PrivacyAmount>{sym} {item.sellingPrice}</PrivacyAmount> : "—"}</td>
                     <td className="py-3 text-right">
-                      {sym} {(parseFloat(item.sellingPrice ?? "0") * item.quantityUsed).toFixed(2)}
+                      <PrivacyAmount>{sym} {(parseFloat(item.sellingPrice ?? "0") * item.quantityUsed).toFixed(2)}</PrivacyAmount>
                     </td>
                   </tr>
                 ))}
@@ -157,8 +158,8 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                     <p className="font-medium">Labor / Service Fee</p>
                   </td>
                   <td className="py-3 text-right">1</td>
-                  <td className="py-3 text-right">{labor > 0 ? `${sym} ${labor.toFixed(2)}` : "—"}</td>
-                  <td className="py-3 text-right">{labor > 0 ? `${sym} ${labor.toFixed(2)}` : "—"}</td>
+                  <td className="py-3 text-right">{labor > 0 ? <PrivacyAmount>{sym} {labor.toFixed(2)}</PrivacyAmount> : "—"}</td>
+                  <td className="py-3 text-right">{labor > 0 ? <PrivacyAmount>{sym} {labor.toFixed(2)}</PrivacyAmount> : "—"}</td>
                 </tr>
               </tbody>
             </table>
@@ -174,17 +175,17 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                 )}
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
-                  <span>{sym} {subtotal.toFixed(2)}</span>
+                  <span><PrivacyAmount>{sym} {subtotal.toFixed(2)}</PrivacyAmount></span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Discount</span>
-                    <span>- {sym} {discountAmount.toFixed(2)}</span>
+                    <span>- <PrivacyAmount>{sym} {discountAmount.toFixed(2)}</PrivacyAmount></span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg pt-1 border-t">
                   <span>Total</span>
-                  <span>{sym} {grandTotal.toFixed(2)}</span>
+                  <span><PrivacyAmount>{sym} {grandTotal.toFixed(2)}</PrivacyAmount></span>
                 </div>
               </div>
             </div>

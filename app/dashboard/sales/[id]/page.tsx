@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Loader2, Printer } from "lucide-react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { useSale } from "@/hooks/queries/use-sale"
 import { useSettings } from "@/hooks/queries/use-settings"
 
@@ -135,9 +136,9 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
                       <p className="text-xs text-muted-foreground">{item.sku}</p>
                     </td>
                     <td className="py-3 text-right">{item.quantity}</td>
-                    <td className="py-3 text-right">{sym} {parseFloat(item.unitPrice).toFixed(2)}</td>
+                    <td className="py-3 text-right"><PrivacyAmount>{sym} {parseFloat(item.unitPrice).toFixed(2)}</PrivacyAmount></td>
                     <td className="py-3 text-right">
-                      {sym} {(parseFloat(item.unitPrice) * item.quantity).toFixed(2)}
+                      <PrivacyAmount>{sym} {(parseFloat(item.unitPrice) * item.quantity).toFixed(2)}</PrivacyAmount>
                     </td>
                   </tr>
                 ))}
@@ -149,17 +150,17 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
               <div className="w-full sm:w-64 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
-                  <span>{sym} {subtotal.toFixed(2)}</span>
+                  <span><PrivacyAmount>{sym} {subtotal.toFixed(2)}</PrivacyAmount></span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Discount</span>
-                    <span>- {sym} {discountAmount.toFixed(2)}</span>
+                    <span>- <PrivacyAmount>{sym} {discountAmount.toFixed(2)}</PrivacyAmount></span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg pt-1 border-t">
                   <span>Total</span>
-                  <span>{sym} {totalAmount.toFixed(2)}</span>
+                  <span><PrivacyAmount>{sym} {totalAmount.toFixed(2)}</PrivacyAmount></span>
                 </div>
               </div>
             </div>

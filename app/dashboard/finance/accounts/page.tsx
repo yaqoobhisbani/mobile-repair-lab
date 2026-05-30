@@ -433,7 +433,7 @@ export default function AccountsPage() {
                   .filter((a) => a.id !== transferSourceId)
                   .map((a) => (
                     <SelectItem key={a.id} value={String(a.id)}>
-                      {a.name} (Rs. {parseFloat(a.balance).toLocaleString()})
+                      {a.name} (<PrivacyAmount>Rs. {parseFloat(a.balance).toLocaleString()}</PrivacyAmount>)
                     </SelectItem>
                   ))}
               </SelectContent>

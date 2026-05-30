@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -133,13 +134,13 @@ export function CreateInventoryForm({ onSuccess, onCancel }: CreateInventoryForm
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={String(a.id)}>
-                  {a.name} (Rs. {parseFloat(a.balance).toLocaleString()})
+                  {a.name} (<PrivacyAmount>Rs. {parseFloat(a.balance).toLocaleString()}</PrivacyAmount>)
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Rs. {(qty * cost).toLocaleString()} will be deducted from this account.
+            <PrivacyAmount>Rs. {(qty * cost).toLocaleString()}</PrivacyAmount> will be deducted from this account.
           </p>
         </div>
       )}

@@ -556,17 +556,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span>Subtotal</span>
-                  <span>Rs. {(items.reduce((s, i) => s + parseFloat(i.sellingPrice ?? "0") * i.quantityUsed, 0) + parseFloat(draftLaborCost || "0")).toFixed(2)}</span>
+                  <span><PrivacyAmount>Rs. {(items.reduce((s, i) => s + parseFloat(i.sellingPrice ?? "0") * i.quantityUsed, 0) + parseFloat(draftLaborCost || "0")).toFixed(2)}</PrivacyAmount></span>
                 </div>
                 {draftDiscountType !== "none" && draftDiscountValue && (
                   <div className="flex items-center justify-between text-xs text-green-600">
                     <span>Discount</span>
-                    <span>- Rs. {(() => { const s = items.reduce((sum, i) => sum + parseFloat(i.sellingPrice ?? "0") * i.quantityUsed, 0) + parseFloat(draftLaborCost || "0"); const dv = parseFloat(draftDiscountValue); return (draftDiscountType === "percentage" ? s * dv / 100 : dv).toFixed(2) })()}</span>
+                    <span>- Rs. <PrivacyAmount>{(() => { const s = items.reduce((sum, i) => sum + parseFloat(i.sellingPrice ?? "0") * i.quantityUsed, 0) + parseFloat(draftLaborCost || "0"); const dv = parseFloat(draftDiscountValue); return (draftDiscountType === "percentage" ? s * dv / 100 : dv).toFixed(2) })()}</PrivacyAmount></span>
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-1 border-t">
                   <span className="text-xs font-semibold">Total</span>
-                  <span className="text-base font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Rs. {computeTotal().toFixed(2)}</span>
+                  <span className="text-base font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent"><PrivacyAmount>Rs. {computeTotal().toFixed(2)}</PrivacyAmount></span>
                 </div>
               </div>
             </div>

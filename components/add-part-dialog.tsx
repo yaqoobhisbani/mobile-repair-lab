@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { PrivacyAmount } from "@/components/privacy-amount"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -130,7 +131,7 @@ export function AddPartDialog({ open, onOpenChange, ticketId, onPartAdded }: Add
                       <span className="text-xs text-muted-foreground">{part.sku}</span>
                     </div>
                     <div className="text-right text-xs shrink-0">
-                      <div>{part.sellingPrice ? `Rs. ${part.sellingPrice}` : "—"}</div>
+                      <div>{part.sellingPrice ? <PrivacyAmount>Rs. {part.sellingPrice}</PrivacyAmount> : "—"}</div>
                       <div className={part.stockQty <= 0 ? "text-destructive" : ""}>
                         Stock: {part.stockQty}
                       </div>

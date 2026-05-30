@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { CreateExpenseForm } from "@/components/forms/create-expense-form"
 
+vi.mock("@/lib/privacy-mode-context", () => ({
+  usePrivacyMode: () => ({ privacyMode: false, toggle: vi.fn() }),
+}))
+
 vi.mock("@/hooks/queries/use-accounts", () => ({
   useAccounts: () => ({
     data: [

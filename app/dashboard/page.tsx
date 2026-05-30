@@ -235,7 +235,7 @@ export default function DashboardOverview() {
                     Rs. <PrivacyAmount><AnimatedCounter to={stats.todayRevenue} decimals={2} /></PrivacyAmount>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Rs. {stats.todayTicketRevenue.toFixed(0)} tickets + Rs. {stats.todaySaleRevenue.toFixed(0)} sales
+                    <PrivacyAmount>Rs. {stats.todayTicketRevenue.toFixed(0)} tickets + Rs. {stats.todaySaleRevenue.toFixed(0)} sales</PrivacyAmount>
                   </p>
                 </CardContent>
               </Card>
@@ -315,7 +315,7 @@ export default function DashboardOverview() {
                           <p className="text-sm font-medium group-hover:underline">{sale.customerName || "Walk-in"}</p>
                           <p className="text-xs text-muted-foreground">{sale.id}</p>
                         </div>
-                        <span className="text-xs font-medium">Rs. {parseFloat(sale.totalAmount).toFixed(2)}</span>
+                        <span className="text-xs font-medium"><PrivacyAmount>Rs. {parseFloat(sale.totalAmount).toFixed(2)}</PrivacyAmount></span>
                       </Link>
                     ))
                   )}
