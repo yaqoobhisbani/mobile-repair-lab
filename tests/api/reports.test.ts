@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { truncateAll } from "../helpers/db"
-import { createCustomer, createPart } from "../helpers/fixtures"
+import { createCustomer, createPart, createAccount } from "../helpers/fixtures"
 import { mockRequest, mockGetRequest, mockParams } from "../helpers/api"
 
 describe("Reports API", () => {
@@ -15,6 +15,7 @@ describe("Reports API", () => {
       sellingPrice: "100",
     })
     const customer = await createCustomer()
+    const account = await createAccount()
     const { POST } = await import("../../app/api/tickets/route")
     const createRes = await POST(
       mockRequest({
@@ -32,7 +33,10 @@ describe("Reports API", () => {
       mockParams(ticket.id)
     )
     const ticketPut = await import("../../app/api/tickets/[id]/route")
-    await ticketPut.PUT(mockRequest({ status: "completed" }), mockParams(ticket.id))
+    await ticketPut.PUT(
+      mockRequest({ status: "completed", paymentStatus: "paid", paymentAccountId: account.id }),
+      mockParams(ticket.id),
+    )
     const { GET } = await import("../../app/api/reports/profit/route")
     const res = await GET(mockGetRequest("http://localhost/?period=daily"))
     expect(res.status).toBe(200)

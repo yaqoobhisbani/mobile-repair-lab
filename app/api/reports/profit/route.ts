@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { tickets, ticketItems, inventory, saleOrders, saleItems, expenses } from "@/db/schema"
-import { eq, desc, and, gte, lte, or } from "drizzle-orm"
+import { tickets, ticketItems, inventory, saleOrders, saleItems, expenses, transactions } from "@/db/schema"
+import { eq, desc, and, gte, lte, inArray } from "drizzle-orm"
 
 function calcDiscount(
   subtotal: number,
@@ -31,6 +31,13 @@ function r(v: number) {
   return Math.round(v * 100) / 100
 }
 
+const PERIOD_FORMATS: Record<string, string> = {
+  yearly: "YYYY",
+  monthly: "YYYY-MM",
+  weekly: "IYYY-IW",
+  daily: "YYYY-MM-DD",
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -43,16 +50,12 @@ export async function GET(request: Request) {
     }
 
     const dateRange = from && to
-      ? [gte(tickets.createdAt, new Date(from)), lte(tickets.createdAt, new Date(to))]
-      : []
+      ? { from: new Date(from), to: new Date(to) }
+      : null
 
-    const saleDateRange = from && to
-      ? [gte(saleOrders.createdAt, new Date(from)), lte(saleOrders.createdAt, new Date(to))]
-      : []
-
-    const expenseDateRange = from && to
-      ? [gte(expenses.date, new Date(from)), lte(expenses.date, new Date(to))]
-      : []
+    const dateCondition = dateRange
+      ? and(gte(transactions.createdAt, dateRange.from), lte(transactions.createdAt, dateRange.to))
+      : undefined
 
     const keyFromDate = (d: Date) => {
       if (period === "yearly") return `${d.getFullYear()}`
@@ -65,14 +68,102 @@ export async function GET(request: Request) {
       return d.toISOString().split("T")[0]
     }
 
-    // --- Tickets ---
+    // --- Net revenue per item from transactions (the canonical ledger) ---
 
-    const ticketConditions = [
-      or(eq(tickets.status, "completed"), eq(tickets.status, "ready_for_pickup")),
-      ...dateRange,
-    ]
+    const txRows = await db
+      .select({
+        referenceType: transactions.referenceType,
+        referenceId: transactions.referenceId,
+        type: transactions.type,
+        amount: transactions.amount,
+        createdAt: transactions.createdAt,
+      })
+      .from(transactions)
+      .where(
+        and(
+          inArray(transactions.referenceType, ["ticket", "sale", "expense"]),
+          dateCondition!,
+        ),
+      )
 
-    const ticketRows = await db
+    // Aggregate credits - debits per reference to get net received amount
+    const netByRef = new Map<string, {
+      referenceType: string
+      referenceId: string
+      netAmount: number
+      date: Date
+    }>()
+    for (const row of txRows) {
+      const key = `${row.referenceType}:${row.referenceId}`
+      const amount = parseFloat(row.amount)
+      const existing = netByRef.get(key) ?? {
+        referenceType: row.referenceType,
+        referenceId: row.referenceId,
+        netAmount: 0,
+        date: row.createdAt,
+      }
+      existing.netAmount += row.type === "credit" ? amount : -amount
+      if (row.createdAt < existing.date) existing.date = row.createdAt
+      netByRef.set(key, existing)
+    }
+
+    const ticketTxIds = [...netByRef.values()]
+      .filter((t) => t.referenceType === "ticket" && t.netAmount > 0)
+      .map((t) => t.referenceId)
+
+    const saleTxIds = [...netByRef.values()]
+      .filter((t) => t.referenceType === "sale" && t.netAmount > 0)
+      .map((t) => t.referenceId)
+
+    const expenseTxIds = [...netByRef.values()]
+      .filter((t) => t.referenceType === "expense")
+      .map((t) => Number(t.referenceId))
+
+    // --- Expenses from transactions ---
+
+    const expenseRows = expenseTxIds.length > 0 ? await db
+      .select({
+        id: expenses.id,
+        category: expenses.category,
+        description: expenses.description,
+      })
+      .from(expenses)
+      .where(inArray(expenses.id, expenseTxIds)) : []
+
+    const expenseMeta = new Map(expenseRows.map((e) => [e.id, { category: e.category, description: e.description }]))
+
+    const expensesByPeriod = new Map<string, number>()
+    const expenseDetails: {
+      type: "expense"
+      id: string
+      date: Date
+      description: string
+      category: string | null
+      amount: number
+    }[] = []
+
+    for (const [, tx] of netByRef) {
+      if (tx.referenceType !== "expense") continue
+      const amount = tx.netAmount
+      if (amount <= 0) continue
+      const meta = expenseMeta.get(Number(tx.referenceId))
+      const key = keyFromDate(tx.date)
+      expensesByPeriod.set(key, (expensesByPeriod.get(key) ?? 0) + amount)
+      expenseDetails.push({
+        type: "expense",
+        id: `exp-${tx.referenceId}`,
+        date: tx.date,
+        description: meta?.description ?? tx.referenceId,
+        category: meta?.category ?? null,
+        amount,
+      })
+    }
+
+    expenseDetails.sort((a, b) => b.date.getTime() - a.date.getTime())
+
+    // --- Tickets with transaction revenue ---
+
+    const ticketRows = ticketTxIds.length > 0 ? await db
       .select({
         id: tickets.id,
         brand: tickets.brand,
@@ -88,8 +179,8 @@ export async function GET(request: Request) {
       .from(tickets)
       .leftJoin(ticketItems, eq(ticketItems.ticketId, tickets.id))
       .leftJoin(inventory, eq(ticketItems.inventoryId, inventory.id))
-      .where(and(...ticketConditions))
-      .orderBy(desc(tickets.createdAt))
+      .where(inArray(tickets.id, ticketTxIds))
+      .orderBy(desc(tickets.createdAt)) : []
 
     const ticketMap = new Map<string, {
       ticketId: string
@@ -101,6 +192,7 @@ export async function GET(request: Request) {
       createdAt: Date
       partsRevenue: number
       partsProfit: number
+      totalCost: number
     }>()
 
     for (const row of ticketRows) {
@@ -115,6 +207,7 @@ export async function GET(request: Request) {
           createdAt: row.createdAt,
           partsRevenue: 0,
           partsProfit: 0,
+          totalCost: 0,
         })
       }
       const entry = ticketMap.get(row.id)!
@@ -123,49 +216,16 @@ export async function GET(request: Request) {
         const selling = parseFloat(row.itemSellingPrice)
         entry.partsRevenue += selling * qty
         if (row.itemCostPrice) {
-          entry.partsProfit += (selling - parseFloat(row.itemCostPrice)) * qty
+          const cost = parseFloat(row.itemCostPrice)
+          entry.partsProfit += (selling - cost) * qty
+          entry.totalCost += cost * qty
         }
       }
     }
 
-    const details: {
-      type: "ticket" | "sale"
-      id: string
-      date: Date
-      period: string
-      description: string
-      revenue: { parts: number; labor: number; total: number }
-      profit: { parts: number; labor: number; total: number }
-    }[] = []
+    // --- Sales with transaction revenue ---
 
-    for (const [, t] of ticketMap) {
-      const subtotal = t.partsRevenue + t.laborCost
-      const { discountAmount, partsDiscount, laborDiscount } = calcDiscount(
-        subtotal, t.partsRevenue, t.laborCost, t.discountType, t.discountValue,
-      )
-
-      const partsRev = r(t.partsRevenue - partsDiscount)
-      const laborRev = r(t.laborCost - laborDiscount)
-      const totalRev = r(subtotal - discountAmount)
-
-      const partsProf = r(t.partsProfit - partsDiscount)
-      const laborProf = r(t.laborCost - laborDiscount)
-      const totalProf = r((t.partsProfit + t.laborCost) - discountAmount)
-
-      details.push({
-        type: "ticket",
-        id: t.ticketId,
-        date: t.createdAt,
-        period: keyFromDate(t.createdAt),
-        description: `${t.brand} ${t.model}`,
-        revenue: { parts: partsRev, labor: laborRev, total: totalRev },
-        profit: { parts: partsProf, labor: laborProf, total: totalProf },
-      })
-    }
-
-    // --- Sales ---
-
-    const saleRows = await db
+    const saleRows = saleTxIds.length > 0 ? await db
       .select({
         id: saleOrders.id,
         customerName: saleOrders.customerName,
@@ -179,8 +239,8 @@ export async function GET(request: Request) {
       .from(saleOrders)
       .leftJoin(saleItems, eq(saleItems.saleId, saleOrders.id))
       .leftJoin(inventory, eq(saleItems.inventoryId, inventory.id))
-      .where(and(...saleDateRange))
-      .orderBy(desc(saleOrders.createdAt))
+      .where(inArray(saleOrders.id, saleTxIds))
+      .orderBy(desc(saleOrders.createdAt)) : []
 
     const saleMap = new Map<string, {
       customerName: string | null
@@ -188,6 +248,7 @@ export async function GET(request: Request) {
       discountValue: string | null
       createdAt: Date
       revenue: number
+      cost: number
       profit: number
     }>()
 
@@ -199,6 +260,7 @@ export async function GET(request: Request) {
           discountValue: row.discountValue,
           createdAt: row.createdAt,
           revenue: 0,
+          cost: 0,
           profit: 0,
         })
       }
@@ -208,18 +270,72 @@ export async function GET(request: Request) {
         const unitPrice = parseFloat(row.itemUnitPrice)
         entry.revenue += unitPrice * qty
         if (row.itemCostPrice) {
-          entry.profit += (unitPrice - parseFloat(row.itemCostPrice)) * qty
+          const cost = parseFloat(row.itemCostPrice)
+          entry.profit += (unitPrice - cost) * qty
+          entry.cost += cost * qty
         }
       }
     }
 
+    // --- Build detail entries using transaction amounts for revenue ---
+
+    const details: {
+      type: "ticket" | "sale"
+      id: string
+      date: Date
+      period: string
+      description: string
+      revenue: { parts: number; labor: number; total: number }
+      profit: { parts: number; labor: number; total: number }
+    }[] = []
+
+    for (const [, t] of ticketMap) {
+      const txRecord = netByRef.get(`ticket:${t.ticketId}`)
+      if (!txRecord) continue
+      const txTotal = txRecord.netAmount
+
+      const subtotal = t.partsRevenue + t.laborCost
+      const { discountAmount, partsDiscount, laborDiscount } = calcDiscount(
+        subtotal, t.partsRevenue, t.laborCost, t.discountType, t.discountValue,
+      )
+
+      const computedTotal = r(subtotal - discountAmount)
+      const ratio = computedTotal > 0 ? txTotal / computedTotal : 1
+
+      const partsRev = r((t.partsRevenue - partsDiscount) * ratio)
+      const laborRev = r((t.laborCost - laborDiscount) * ratio)
+      const totalRev = r(txTotal)
+
+      const partsCogs = r(t.totalCost)
+      const partsProf = r(partsRev - partsCogs)
+      const laborProf = r(laborRev)
+      const totalProf = r(partsProf + laborProf)
+
+      details.push({
+        type: "ticket",
+        id: t.ticketId,
+        date: t.createdAt,
+        period: keyFromDate(t.createdAt),
+        description: `${t.brand} ${t.model}`,
+        revenue: { parts: partsRev, labor: laborRev, total: totalRev },
+        profit: { parts: partsProf, labor: laborProf, total: totalProf },
+      })
+    }
+
     for (const [id, s] of saleMap) {
+      const txRecord = netByRef.get(`sale:${id}`)
+      if (!txRecord) continue
+      const txTotal = txRecord.netAmount
+
       const { discountAmount } = calcDiscount(
         s.revenue, s.revenue, 0, s.discountType, s.discountValue,
       )
 
-      const revenue = r(s.revenue - discountAmount)
-      const profit = r(s.profit - discountAmount)
+      const computedTotal = r(s.revenue - discountAmount)
+      const ratio = computedTotal > 0 ? txTotal / computedTotal : 1
+
+      const revenue = r(s.revenue * ratio)
+      const profit = r((s.revenue - s.cost) * ratio)
 
       details.push({
         type: "sale",
@@ -227,54 +343,12 @@ export async function GET(request: Request) {
         date: s.createdAt,
         period: keyFromDate(s.createdAt),
         description: s.customerName || `Sale ${id}`,
-        revenue: { parts: revenue, labor: 0, total: revenue },
+        revenue: { parts: revenue, labor: 0, total: r(txTotal) },
         profit: { parts: profit, labor: 0, total: profit },
       })
     }
 
     details.sort((a, b) => b.date.getTime() - a.date.getTime())
-
-    // --- Expenses ---
-
-    const expenseConditions = from && to
-      ? [gte(expenses.date, new Date(from)), lte(expenses.date, new Date(to))]
-      : []
-
-    const expenseRows = await db
-      .select({
-        id: expenses.id,
-        amount: expenses.amount,
-        description: expenses.description,
-        category: expenses.category,
-        createdAt: expenses.date,
-      })
-      .from(expenses)
-      .where(and(...expenseConditions))
-      .orderBy(desc(expenses.date))
-
-    const expensesByPeriod = new Map<string, number>()
-    const expenseDetails: {
-      type: "expense"
-      id: string
-      date: Date
-      description: string
-      category: string | null
-      amount: number
-    }[] = []
-
-    for (const row of expenseRows) {
-      const key = keyFromDate(row.createdAt)
-      const amount = parseFloat(row.amount)
-      expensesByPeriod.set(key, (expensesByPeriod.get(key) ?? 0) + amount)
-      expenseDetails.push({
-        type: "expense",
-        id: `exp-${row.id}`,
-        date: row.createdAt,
-        description: row.description,
-        category: row.category,
-        amount,
-      })
-    }
 
     // --- Grouped data ---
 
