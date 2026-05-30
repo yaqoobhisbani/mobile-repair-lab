@@ -10,6 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "bun run db/seed.ts",
+    "db:clear": "bun run db/clear.ts",
     "test": "vitest run",
     "test:api": "vitest run tests/api/",
     "test:components": "vitest run tests/components/"

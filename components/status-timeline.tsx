@@ -16,9 +16,10 @@ interface StatusTimelineProps {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  })
+  const d = new Date(iso)
+  const date = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Karachi" })
+  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Karachi" })
+  return `${date}, ${time}`
 }
 
 export function StatusTimeline({ currentStatus, statusHistory = [] }: StatusTimelineProps) {

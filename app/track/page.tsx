@@ -41,24 +41,17 @@ export default function TrackPage() {
     setStatusHistory([])
 
     try {
-      const res = await fetch(`/api/tickets?search=${encodeURIComponent(query.trim())}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to search")
-
-      const tickets = data.tickets ?? []
-      if (tickets.length === 0) {
+      const res = await fetch(`/api/track/${encodeURIComponent(query.trim())}`)
+      if (res.status === 404) {
         setError("No ticket found with that ID. Please check and try again.")
         setSearched(true)
         return
       }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to fetch ticket")
 
-      const match = tickets[0]
-      const detailRes = await fetch(`/api/tickets/${encodeURIComponent(match.id)}`)
-      const detailData = await detailRes.json()
-      if (!detailRes.ok) throw new Error(detailData.error || "Failed to fetch ticket details")
-
-      setTicket(detailData.ticket)
-      setStatusHistory(detailData.statusHistory ?? [])
+      setTicket(data.ticket)
+      setStatusHistory(data.statusHistory ?? [])
     } catch (err: any) {
       setError(err.message || "Something went wrong")
     } finally {

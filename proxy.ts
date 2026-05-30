@@ -15,6 +15,7 @@ export async function proxy(request: NextRequest) {
   if (!pathname.startsWith("/api/")) return NextResponse.next()
   if (publicApiPaths.some((p) => pathname === p)) return NextResponse.next()
   if (pathname === "/api/auth/logout") return NextResponse.next()
+  if (pathname.startsWith("/api/track/")) return NextResponse.next()
 
   const token = request.cookies.get(COOKIE_NAME)?.value
   if (!token) {
