@@ -5,29 +5,49 @@ import { eq } from "drizzle-orm"
 export const revalidate = 30
 
 export default async function PriceListPage() {
-  const [shop] = await db
-    .select({
-      shopName: settings.shopName,
-      currency: settings.currency,
-    })
-    .from(settings)
-    .where(eq(settings.id, 1))
-    .limit(1)
+  let currency = "PKR"
+  let shopName = "Mobile Repair Lab"
 
-  const currency = shop?.currency ?? "PKR"
-  const shopName = shop?.shopName ?? "Mobile Repair Lab"
+  try {
+    const [shop] = await db
+      .select({
+        shopName: settings.shopName,
+        currency: settings.currency,
+      })
+      .from(settings)
+      .where(eq(settings.id, 1))
+      .limit(1)
 
-  const items = await db
-    .select({
-      id: inventory.id,
-      partName: inventory.partName,
-      sku: inventory.sku,
-      compatibility: inventory.compatibility,
-      stockQty: inventory.stockQty,
-      sellingPrice: inventory.sellingPrice,
-    })
-    .from(inventory)
-    .orderBy(inventory.partName)
+    currency = shop?.currency ?? "PKR"
+    shopName = shop?.shopName ?? "Mobile Repair Lab"
+  } catch {
+    // database may not be available during prerender/build
+  }
+
+  let items: {
+    id: number
+    partName: string
+    sku: string
+    compatibility: string | null
+    stockQty: number
+    sellingPrice: string | null
+  }[] = []
+
+  try {
+    items = await db
+      .select({
+        id: inventory.id,
+        partName: inventory.partName,
+        sku: inventory.sku,
+        compatibility: inventory.compatibility,
+        stockQty: inventory.stockQty,
+        sellingPrice: inventory.sellingPrice,
+      })
+      .from(inventory)
+      .orderBy(inventory.partName)
+  } catch {
+    // database may not be available during prerender/build
+  }
 
   return (
     <div className="max-w-6xl mx-auto py-10 px-6">
