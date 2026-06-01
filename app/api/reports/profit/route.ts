@@ -98,7 +98,7 @@ export async function GET(request: Request) {
       const amount = parseFloat(row.amount)
       const existing = netByRef.get(key) ?? {
         referenceType: row.referenceType,
-        referenceId: row.referenceId,
+        referenceId: row.referenceId ?? "",
         netAmount: 0,
         date: row.createdAt,
       }

@@ -21,7 +21,7 @@ async function recalcAndSync(
     .where(eq(ticketItems.ticketId, ticketId))
 
   const partsTotal = allItems.reduce(
-    (sum, item) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
+    (sum: number, item: { sellingPrice: string | null; quantityUsed: number }) => sum + (parseFloat(item.sellingPrice ?? "0") * item.quantityUsed),
     0,
   )
   const labor = parseFloat(ticket.laborCost ?? "0")
