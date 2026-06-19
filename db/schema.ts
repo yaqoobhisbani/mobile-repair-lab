@@ -200,3 +200,67 @@ export const transactions = pgTable("transactions", {
   referenceId: varchar("reference_id", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// ── Business Management Portal ──────────────────────────────────────────
+
+export const businessMembers = pgTable("business_members", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  role: varchar("role", { length: 100 }).notNull().default("partner"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const businessAssets = pgTable("business_assets", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  costPrice: decimal("cost_price", { precision: 12, scale: 2 }).notNull(),
+  purchaseDate: timestamp("purchase_date").defaultNow().notNull(),
+  purchasedByMemberId: integer("purchased_by_member_id").references(
+    () => businessMembers.id,
+    { onDelete: "set null" }
+  ),
+  fundingSource: varchar("funding_source", { length: 50 })
+    .notNull()
+    .default("member_equity"),
+  depreciationRate: decimal("depreciation_rate", { precision: 5, scale: 2 }).default("0.00"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const shareTransactions = pgTable("share_transactions", {
+  id: serial("id").primaryKey(),
+  transactionType: varchar("transaction_type", { length: 50 }).notNull(),
+  sellerMemberId: integer("seller_member_id").references(
+    () => businessMembers.id,
+    { onDelete: "cascade" }
+  ),
+  buyerMemberId: integer("buyer_member_id").references(
+    () => businessMembers.id,
+    { onDelete: "cascade" }
+  ),
+  sharesCount: decimal("shares_count", { precision: 12, scale: 2 }).notNull(),
+  pricePerShare: decimal("price_per_share", { precision: 10, scale: 2 })
+    .notNull()
+    .default("1000.00"),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  transactionDate: timestamp("transaction_date").defaultNow().notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const dividendDistributions = pgTable("dividend_distributions", {
+  id: serial("id").primaryKey(),
+  memberId: integer("member_id")
+    .notNull()
+    .references(() => businessMembers.id, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  payoutDate: timestamp("payout_date").defaultNow().notNull(),
+  shareholdingPercentage: decimal("shareholding_percentage", {
+    precision: 5,
+    scale: 2,
+  }).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})

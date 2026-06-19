@@ -40,6 +40,7 @@ import {
   Ticket,
   Eye,
   EyeOff,
+  Briefcase,
 } from "lucide-react"
 
 interface NavItem {
@@ -241,6 +242,10 @@ export function DashboardHeader() {
               <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/business")}>
+                <Briefcase className="h-4 w-4 mr-2" />
+                Business Portal
               </DropdownMenuItem>
               <DropdownMenuItem onClick={togglePrivacy}>
                 {privacyMode ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}

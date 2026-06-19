@@ -110,3 +110,46 @@ export async function createExpense(overrides: Partial<typeof schema.expenses.$i
     .returning()
   return expense
 }
+
+export async function createBusinessMember(overrides: Partial<typeof schema.businessMembers.$inferInsert> = {}) {
+  const [member] = await db
+    .insert(schema.businessMembers)
+    .values({
+      name: "Test Member",
+      email: "member@test.com",
+      phone: "555-0100",
+      role: "partner",
+      ...overrides,
+    })
+    .returning()
+  return member
+}
+
+export async function createBusinessAsset(overrides: Partial<typeof schema.businessAssets.$inferInsert> = {}) {
+  const [asset] = await db
+    .insert(schema.businessAssets)
+    .values({
+      name: "Test Asset",
+      costPrice: "100000",
+      purchasedByMemberId: overrides.purchasedByMemberId || null,
+      fundingSource: "member_equity",
+      ...overrides,
+    })
+    .returning()
+  return asset
+}
+
+export async function createShareTransaction(overrides: Partial<typeof schema.shareTransactions.$inferInsert> = {}) {
+  const [tx] = await db
+    .insert(schema.shareTransactions)
+    .values({
+      transactionType: "initial_issuance",
+      buyerMemberId: overrides.buyerMemberId || 0,
+      sharesCount: "100",
+      pricePerShare: "1000",
+      totalAmount: "100000",
+      ...overrides,
+    })
+    .returning()
+  return tx
+}
