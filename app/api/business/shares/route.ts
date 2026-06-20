@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { shareTransactions, businessMembers } from "@/db/schema"
+import { shareTransactions, businessMembers, settings } from "@/db/schema"
 import { eq, desc, sql, or } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 
@@ -38,6 +38,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { transactionType, sellerMemberId, buyerMemberId, sharesCount, pricePerShare, notes } = body
+
+    const [setting] = await db.select({ navPrice: settings.navPrice }).from(settings).limit(1)
+    const navPrice = setting ? parseFloat(setting.navPrice) : 1000
 
     if (!transactionType) {
       return NextResponse.json({ error: "Transaction type is required" }, { status: 400 })
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const price = parseFloat(pricePerShare || "1000")
+    const price = parseFloat(pricePerShare || String(navPrice))
     const totalAmount = count * price
 
     const [transaction] = await db

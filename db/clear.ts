@@ -19,7 +19,10 @@ async function clear() {
       customers,
       accounts,
       settings,
-      users
+      users,
+      share_transactions,
+      business_assets,
+      business_members
     RESTART IDENTITY CASCADE
   `)
 

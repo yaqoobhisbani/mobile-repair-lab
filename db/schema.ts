@@ -160,6 +160,7 @@ export const settings = pgTable("settings", {
   shopAddress: varchar("shop_address", { length: 500 }).notNull().default("123 Repair Street, City, State 12345"),
   shopPhone: varchar("shop_phone", { length: 50 }).notNull().default("(555) 987-6543"),
   currency: varchar("currency", { length: 10 }).notNull().default("PKR"),
+  navPrice: decimal("nav_price", { precision: 12, scale: 2 }).notNull().default("1000.00"),
 })
 
 export const saleOrders = pgTable("sale_orders", {
@@ -240,27 +241,14 @@ export const shareTransactions = pgTable("share_transactions", {
     () => businessMembers.id,
     { onDelete: "cascade" }
   ),
-  sharesCount: decimal("shares_count", { precision: 12, scale: 2 }).notNull(),
-  pricePerShare: decimal("price_per_share", { precision: 10, scale: 2 })
+  sharesCount: decimal("shares_count", { precision: 16, scale: 6 }).notNull(),
+  pricePerShare: decimal("price_per_share", { precision: 12, scale: 4 })
     .notNull()
-    .default("1000.00"),
-  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+    .default("1000.0000"),
+  totalAmount: decimal("total_amount", { precision: 16, scale: 4 }).notNull(),
   transactionDate: timestamp("transaction_date").defaultNow().notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
-export const dividendDistributions = pgTable("dividend_distributions", {
-  id: serial("id").primaryKey(),
-  memberId: integer("member_id")
-    .notNull()
-    .references(() => businessMembers.id, { onDelete: "cascade" }),
-  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  payoutDate: timestamp("payout_date").defaultNow().notNull(),
-  shareholdingPercentage: decimal("shareholding_percentage", {
-    precision: 5,
-    scale: 2,
-  }).notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+

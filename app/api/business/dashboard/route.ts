@@ -45,7 +45,7 @@ export async function GET() {
 
     const navPerShare =
       totalShares > 0
-        ? (totalAssetValue + totalShopCash) / totalShares
+        ? totalAssetValue / totalShares
         : 0
 
     const memberShares = await db

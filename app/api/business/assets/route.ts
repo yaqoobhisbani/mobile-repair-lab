@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { businessAssets, businessMembers, shareTransactions, accounts } from "@/db/schema"
+import { businessAssets, businessMembers, shareTransactions, accounts, settings } from "@/db/schema"
 import { eq, desc, sql } from "drizzle-orm"
 
 function calculateDepreciatedValue(
@@ -78,6 +78,9 @@ export async function POST(request: Request) {
       )
     }
 
+    const [setting] = await db.select({ navPrice: settings.navPrice }).from(settings).limit(1)
+    const navPrice = setting ? parseFloat(setting.navPrice) : 1000
+
     const result = await db.transaction(async (tx) => {
       const [asset] = await tx
         .insert(businessAssets)
@@ -93,14 +96,14 @@ export async function POST(request: Request) {
         .returning()
 
       if (fundingSource === "member_equity" && purchasedByMemberId) {
-        const sharesCount = price / 1000
+        const sharesCount = price / navPrice
         if (sharesCount > 0) {
           await tx.insert(shareTransactions).values({
             transactionType: "initial_issuance",
             sellerMemberId: null,
             buyerMemberId: purchasedByMemberId,
             sharesCount: String(sharesCount),
-            pricePerShare: "1000.00",
+            pricePerShare: String(navPrice),
             totalAmount: String(price),
             notes: `Auto-issued for asset: ${name.trim()}`,
           })

@@ -4,19 +4,19 @@ import { use } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Loader2, Users, Package, ArrowLeftRight, Banknote } from "lucide-react"
+import { ArrowLeft, Loader2, Users, Package, Banknote } from "lucide-react"
 import { PageTransition } from "@/components/page-transition"
 import { AnimatedCounter } from "@/components/animated-counter"
 import { PrivacyAmount } from "@/components/privacy-amount"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useBusinessMember } from "@/hooks/queries/use-business-member"
+import { useNavPrice } from "@/hooks/queries/use-nav-price"
 
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const numericId = Number(id)
   const { data, isLoading } = useBusinessMember(numericId)
+  const navPrice = useNavPrice()
 
   function formatDate(d: string) {
     return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -60,9 +60,9 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  const { member, sharesOwned, transactions, assets, dividends } = data
+  const { member, sharesOwned, transactions, assets } = data
   const shares = parseFloat(sharesOwned)
-  const equityValue = shares * 1000
+  const equityValue = shares * navPrice
 
   return (
     <PageTransition>
@@ -171,40 +171,6 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
             </CardContent>
           </Card>
         </div>
-
-        {dividends.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Dividends Received</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Shareholding %</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dividends.map((d) => (
-                      <TableRow key={d.id}>
-                        <TableCell>{formatDate(d.payoutDate)}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          <PrivacyAmount>Rs. {parseFloat(d.amount).toLocaleString()}</PrivacyAmount>
-                        </TableCell>
-                        <TableCell className="text-right">{d.shareholdingPercentage}%</TableCell>
-                        <TableCell className="text-muted-foreground">{d.notes ?? "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </PageTransition>
   )

@@ -15,6 +15,13 @@
       "when": 1781907984121,
       "tag": "0001_moaning_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783324800000,
+      "tag": "0002_precise_shares",
+      "breakpoints": true
     }
   ]
 }

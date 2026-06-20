@@ -9,7 +9,7 @@ import {
   Users,
   Package,
   ArrowLeftRight,
-  Banknote,
+  Settings,
   ArrowLeft,
 } from "lucide-react"
 
@@ -18,7 +18,10 @@ const navItems = [
   { href: "/business/members", label: "Members", icon: Users },
   { href: "/business/assets", label: "Assets", icon: Package },
   { href: "/business/shares", label: "Shares", icon: ArrowLeftRight },
-  { href: "/business/dividends", label: "Dividends", icon: Banknote },
+]
+
+const bottomItems = [
+  { href: "/business/settings", label: "Settings", icon: Settings },
 ]
 
 interface BusinessSidebarProps {
@@ -46,6 +49,31 @@ export function BusinessSidebar({ onClose }: BusinessSidebarProps) {
             item.href === "/business"
               ? pathname === "/business"
               : pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                isActive
+                  ? "bg-gradient-to-r from-primary/10 to-transparent text-primary font-semibold"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      <Separator />
+
+      <nav className="space-y-1 px-3">
+        {bottomItems.map((item) => {
+          const Icon = item.icon
+          const isActive = pathname.startsWith(item.href)
           return (
             <Link
               key={item.href}

@@ -8,6 +8,7 @@ export interface ShopSettings {
   shopAddress: string
   shopPhone: string
   currency: string
+  navPrice: string
 }
 
 export function useSettings() {

@@ -10,12 +10,14 @@ import { PageTransition, StaggerContainer, StaggerItem, HoverCard } from "@/comp
 import { AnimatedCounter } from "@/components/animated-counter"
 import { PrivacyAmount } from "@/components/privacy-amount"
 import { useBusinessDashboard } from "@/hooks/queries/use-business-dashboard"
+import { useNavPrice } from "@/hooks/queries/use-nav-price"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts"
 
 const COLORS = ["#06b6d4", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#6366f1", "#14b8a6"]
 
 export default function BusinessOverview() {
   const { data: dashboard, isLoading } = useBusinessDashboard()
+  const navPrice = useNavPrice()
 
   const pieData = useMemo(() => {
     if (!dashboard?.shareholding) return []
@@ -76,12 +78,12 @@ export default function BusinessOverview() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Valuation</CardTitle>
                   <Briefcase className="h-4 w-4 text-cyan-500" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    Rs. <PrivacyAmount><AnimatedCounter to={parseFloat(dashboard?.totalAssetValue ?? "0") + parseFloat(dashboard?.totalShopCash ?? "0")} decimals={2} /></PrivacyAmount>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Assets + Shop Cash</p>
-                </CardContent>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                Rs. <PrivacyAmount><AnimatedCounter to={parseFloat(dashboard?.totalAssetValue ?? "0") + parseFloat(dashboard?.totalShopCash ?? "0")} decimals={2} /></PrivacyAmount>
+              </div>
+              <p className="text-xs text-muted-foreground">Assets + Shop Cash</p>
+            </CardContent>
               </Card>
             </HoverCard>
           </StaggerItem>
@@ -250,7 +252,7 @@ export default function BusinessOverview() {
                         <TableCell className="text-right">{parseFloat(row.sharesOwned).toLocaleString()}</TableCell>
                         <TableCell className="text-right">{row.ownershipPercent}%</TableCell>
                         <TableCell className="text-right">
-                          <PrivacyAmount>Rs. {(parseFloat(row.sharesOwned) * 1000).toLocaleString()}</PrivacyAmount>
+                          <PrivacyAmount>Rs. {(parseFloat(row.sharesOwned) * navPrice).toLocaleString()}</PrivacyAmount>
                         </TableCell>
                       </TableRow>
                     ))}

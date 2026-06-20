@@ -6,19 +6,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DataTablePagination } from "@/components/data-table-pagination"
-import { useAccounts } from "@/hooks/queries/use-accounts"
 import { Plus, ArrowLeftRight, Loader2, Banknote, Search, X } from "lucide-react"
 import { PageTransition } from "@/components/page-transition"
+import { AnimatedCounter } from "@/components/animated-counter"
 import { PrivacyAmount } from "@/components/privacy-amount"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/empty-state"
+import { SlideOver } from "@/components/slide-over"
 import { useBusinessShares } from "@/hooks/queries/use-business-shares"
 import { useBusinessMembers } from "@/hooks/queries/use-business-members"
 import { useCreateShareTransaction } from "@/hooks/mutations/use-create-share-transaction"
-import { useDistributeDividends } from "@/hooks/mutations/use-distribute-dividends"
+import { useNavPrice } from "@/hooks/queries/use-nav-price"
 
 function getTypeBadge(type: string) {
   const styles: Record<string, string> = {
@@ -41,22 +42,19 @@ function getTypeBadge(type: string) {
 export default function SharesPage() {
   const { data: transactions = [], isLoading } = useBusinessShares()
   const { data: members = [] } = useBusinessMembers()
-  const { data: accounts = [] } = useAccounts()
+  const navPrice = useNavPrice()
   const createTransaction = useCreateShareTransaction()
-  const distributeDividends = useDistributeDividends()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [issueDialogOpen, setIssueDialogOpen] = useState(false)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
-  const [dividendDialogOpen, setDividendDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState("all")
 
   const [issueForm, setIssueForm] = useState({ memberId: "", cashAmount: "" })
-  const [transferForm, setTransferForm] = useState({ sellerId: "", buyerId: "", sharesCount: "", pricePerShare: "1000", notes: "" })
-  const [dividendForm, setDividendForm] = useState({ totalAmount: "", notes: "", accountId: "" })
+  const [transferForm, setTransferForm] = useState({ sellerId: "", buyerId: "", sharesCount: "", pricePerShare: "", notes: "" })
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -76,6 +74,15 @@ export default function SharesPage() {
 
   const hasFilters = search || typeFilter !== "all"
 
+  const totalShares = useMemo(
+    () => transactions.reduce((sum, t) => sum + parseFloat(t.sharesCount), 0),
+    [transactions]
+  )
+  const totalValue = useMemo(
+    () => transactions.reduce((sum, t) => sum + parseFloat(t.totalAmount), 0),
+    [transactions]
+  )
+
   const memberShareBalance = useMemo(() => {
     const balance: Record<number, number> = {}
     for (const tx of transactions) {
@@ -88,8 +95,8 @@ export default function SharesPage() {
   const calculatedShares = useMemo(() => {
     const cash = parseFloat(issueForm.cashAmount)
     if (isNaN(cash) || cash <= 0) return 0
-    return cash / 1000
-  }, [issueForm.cashAmount])
+    return cash / navPrice
+  }, [issueForm.cashAmount, navPrice])
 
   const selectedSellerBalance = useMemo(() => {
     const id = Number(transferForm.sellerId)
@@ -99,8 +106,8 @@ export default function SharesPage() {
   async function handleIssueShares() {
     if (!issueForm.memberId) { toast.error("Select a member"); return }
     const cash = parseFloat(issueForm.cashAmount)
-    if (isNaN(cash) || cash < 1000) { toast.error("Minimum cash injection is Rs. 1,000"); return }
-    const shares = cash / 1000
+    if (isNaN(cash) || cash < navPrice) { toast.error(`Minimum cash injection is Rs. ${navPrice.toLocaleString()}`); return }
+    const shares = cash / navPrice
 
     setSaving(true)
     try {
@@ -108,7 +115,7 @@ export default function SharesPage() {
         transactionType: "initial_issuance",
         buyerMemberId: Number(issueForm.memberId),
         sharesCount: shares,
-        pricePerShare: 1000,
+        pricePerShare: navPrice,
         notes: `Cash injection: Rs. ${cash.toLocaleString()}`,
       })
       toast.success(`${shares.toFixed(2)} shares issued`)
@@ -135,33 +142,12 @@ export default function SharesPage() {
         sellerMemberId: Number(transferForm.sellerId),
         buyerMemberId: Number(transferForm.buyerId),
         sharesCount: count,
-        pricePerShare: parseFloat(transferForm.pricePerShare) || 1000,
+        pricePerShare: parseFloat(transferForm.pricePerShare) || navPrice,
         notes: transferForm.notes || undefined,
       })
       toast.success("Shares transferred")
       setTransferDialogOpen(false)
-      setTransferForm({ sellerId: "", buyerId: "", sharesCount: "", pricePerShare: "1000", notes: "" })
-    } catch (e: any) {
-      toast.error(e.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleDistributeDividends() {
-    const amount = parseFloat(dividendForm.totalAmount)
-    if (isNaN(amount) || amount <= 0) { toast.error("Enter a valid total amount"); return }
-
-    setSaving(true)
-    try {
-      await distributeDividends.mutateAsync({
-        totalAmount: amount,
-        notes: dividendForm.notes || undefined,
-        accountId: dividendForm.accountId ? Number(dividendForm.accountId) : null,
-      })
-      toast.success("Dividends distributed")
-      setDividendDialogOpen(false)
-      setDividendForm({ totalAmount: "", notes: "", accountId: "" })
+      setTransferForm({ sellerId: "", buyerId: "", sharesCount: "", pricePerShare: "", notes: "" })
     } catch (e: any) {
       toast.error(e.message)
     } finally {
@@ -177,8 +163,8 @@ export default function SharesPage() {
     <PageTransition>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Shares</h1>
-          <p className="text-sm text-muted-foreground">Issue shares, transfer equity, and distribute dividends.</p>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-emerald-500 to-cyan-500 bg-clip-text text-transparent">Shares</h1>
+          <p className="text-sm text-muted-foreground">Issue shares and transfer equity between members.</p>
         </div>
 
         <div className="flex flex-wrap gap-3">
@@ -190,11 +176,43 @@ export default function SharesPage() {
             <ArrowLeftRight className="h-4 w-4 mr-2" />
             Transfer Shares
           </Button>
-          <Button variant="outline" onClick={() => setDividendDialogOpen(true)}>
-            <Banknote className="h-4 w-4 mr-2" />
-            Distribute Dividends
-          </Button>
         </div>
+
+        {!isLoading && transactions.length > 0 && (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Shares Issued</CardTitle>
+                <ArrowLeftRight className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  <AnimatedCounter to={Math.round(totalShares * 100) / 100} decimals={2} />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Transaction Value</CardTitle>
+                <Banknote className="h-4 w-4 text-emerald-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  <PrivacyAmount>Rs. {Math.round(totalValue).toLocaleString()}</PrivacyAmount>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Transactions</CardTitle>
+                <ArrowLeftRight className="h-4 w-4 text-violet-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold"><AnimatedCounter to={transactions.length} /></div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -235,7 +253,12 @@ export default function SharesPage() {
                 {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
               </div>
             ) : transactions.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No transactions yet. Issue initial shares to get started.</p>
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="No transactions yet"
+                description="Issue initial shares to get started."
+                action={<Button onClick={() => setIssueDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />Issue Initial Shares</Button>}
+              />
             ) : (
               <>
                 <div className="overflow-x-auto">
@@ -284,179 +307,129 @@ export default function SharesPage() {
         </Card>
       </div>
 
-      <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Issue Initial Shares</DialogTitle>
-            <DialogDescription>Issue shares to a member for a cash capital injection.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Member</Label>
-              <Select value={issueForm.memberId} onValueChange={(v) => setIssueForm({ ...issueForm, memberId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((m) => (
-                    <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Cash Amount (Rs.)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="1000"
+      <SlideOver
+        open={issueDialogOpen}
+        onOpenChange={setIssueDialogOpen}
+        title="Issue Initial Shares"
+        description="Issue shares to a member for a cash capital injection."
+        gradient="shares"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Member</Label>
+            <Select value={issueForm.memberId} onValueChange={(v) => setIssueForm({ ...issueForm, memberId: v })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select member" />
+              </SelectTrigger>
+              <SelectContent>
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Cash Amount (Rs.)</Label>
+            <Input
+              type="number"
+              min="0"
+                step={navPrice}
                 value={issueForm.cashAmount}
                 onChange={(e) => setIssueForm({ ...issueForm, cashAmount: e.target.value })}
                 placeholder="e.g. 50000"
-              />
+            />
               {calculatedShares > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  This will issue <strong>{calculatedShares.toFixed(2)} shares</strong> at Rs. 1,000/share.
+                  This will issue <strong>{calculatedShares.toFixed(2)} shares</strong> at Rs. {navPrice.toLocaleString()}/share.
                 </p>
               )}
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleIssueShares} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Issue Shares
-              </Button>
-            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Transfer Shares</DialogTitle>
-            <DialogDescription>Transfer shares between members.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Seller</Label>
-              <Select value={transferForm.sellerId} onValueChange={(v) => setTransferForm({ ...transferForm, sellerId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select seller" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.filter((m) => (memberShareBalance[m.id] ?? 0) > 0).map((m) => (
-                    <SelectItem key={m.id} value={String(m.id)}>
-                      {m.name} ({(memberShareBalance[m.id] ?? 0).toFixed(2)} shares)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Buyer</Label>
-              <Select value={transferForm.buyerId} onValueChange={(v) => setTransferForm({ ...transferForm, buyerId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select buyer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.filter((m) => String(m.id) !== transferForm.sellerId).map((m) => (
-                    <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Shares to Transfer *</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={transferForm.sharesCount}
-                  onChange={(e) => setTransferForm({ ...transferForm, sharesCount: e.target.value })}
-                  placeholder="e.g. 10"
-                />
-                {transferForm.sellerId && (
-                  <p className="text-xs text-muted-foreground">Seller balance: {selectedSellerBalance.toFixed(2)} shares</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Price per Share (Rs.)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="100"
-                  value={transferForm.pricePerShare}
-                  onChange={(e) => setTransferForm({ ...transferForm, pricePerShare: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Input value={transferForm.notes} onChange={(e) => setTransferForm({ ...transferForm, notes: e.target.value })} placeholder="Optional notes" />
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setTransferDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleTransfer} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Transfer
-              </Button>
-            </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleIssueShares} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Issue Shares
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </SlideOver>
 
-      <Dialog open={dividendDialogOpen} onOpenChange={(open) => { if (!open) setDividendForm({ totalAmount: "", notes: "", accountId: "" }); setDividendDialogOpen(open) }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Distribute Dividends</DialogTitle>
-            <DialogDescription>Distribute profits to shareholders based on their ownership percentage.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
+      <SlideOver
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        title="Transfer Shares"
+        description="Transfer shares between members."
+        gradient="shares"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Seller</Label>
+            <Select value={transferForm.sellerId} onValueChange={(v) => setTransferForm({ ...transferForm, sellerId: v })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select seller" />
+              </SelectTrigger>
+              <SelectContent>
+                {members.filter((m) => (memberShareBalance[m.id] ?? 0) > 0).map((m) => (
+                  <SelectItem key={m.id} value={String(m.id)}>
+                    {m.name} ({(memberShareBalance[m.id] ?? 0).toFixed(2)} shares)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Buyer</Label>
+            <Select value={transferForm.buyerId} onValueChange={(v) => setTransferForm({ ...transferForm, buyerId: v })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select buyer" />
+              </SelectTrigger>
+              <SelectContent>
+                {members.filter((m) => String(m.id) !== transferForm.sellerId).map((m) => (
+                  <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Total Distribution Amount (Rs.)</Label>
+              <Label>Shares to Transfer *</Label>
               <Input
                 type="number"
                 min="0"
                 step="0.01"
-                value={dividendForm.totalAmount}
-                onChange={(e) => setDividendForm({ ...dividendForm, totalAmount: e.target.value })}
-                placeholder="e.g. 50000"
+                value={transferForm.sharesCount}
+                onChange={(e) => setTransferForm({ ...transferForm, sharesCount: e.target.value })}
+                placeholder="e.g. 10"
+              />
+              {transferForm.sellerId && (
+                <p className="text-xs text-muted-foreground">Seller balance: {selectedSellerBalance.toFixed(2)} shares</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Price per Share (Rs.)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="100"
+                value={transferForm.pricePerShare}
+                onChange={(e) => setTransferForm({ ...transferForm, pricePerShare: e.target.value })}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Input value={dividendForm.notes} onChange={(e) => setDividendForm({ ...dividendForm, notes: e.target.value })} placeholder="Optional notes" />
-            </div>
-            <div className="space-y-2">
-              <Label>Deduct From Account (optional)</Label>
-              <Select value={dividendForm.accountId} onValueChange={(v) => setDividendForm({ ...dividendForm, accountId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={String(a.id)}>
-                      {a.name} (Rs. {parseFloat(a.balance).toLocaleString()})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                If selected, the total amount will be deducted from this account.
-              </p>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setDividendDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleDistributeDividends} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Distribute
-              </Button>
-            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Input value={transferForm.notes} onChange={(e) => setTransferForm({ ...transferForm, notes: e.target.value })} placeholder="Optional notes" />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setTransferDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleTransfer} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Transfer
+            </Button>
+          </div>
+        </div>
+      </SlideOver>
+
     </PageTransition>
   )
 }

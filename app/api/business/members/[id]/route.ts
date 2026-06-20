@@ -4,7 +4,6 @@ import {
   businessMembers,
   shareTransactions,
   businessAssets,
-  dividendDistributions,
 } from "@/db/schema"
 import { eq, desc, sql, and, or } from "drizzle-orm"
 
@@ -63,18 +62,11 @@ export async function GET(
       .where(eq(businessAssets.purchasedByMemberId, numericId))
       .orderBy(desc(businessAssets.createdAt))
 
-    const dividends = await db
-      .select()
-      .from(dividendDistributions)
-      .where(eq(dividendDistributions.memberId, numericId))
-      .orderBy(desc(dividendDistributions.createdAt))
-
     return NextResponse.json({
       member,
       sharesOwned: shareBalance?.owned ?? "0",
       transactions,
       assets,
-      dividends,
     })
   } catch {
     return NextResponse.json({ error: "Failed to fetch member" }, { status: 500 })

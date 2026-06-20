@@ -8,6 +8,7 @@ export type ShopSettings = {
   shopAddress: string
   shopPhone: string
   currency: string
+  navPrice: string
 }
 
 const defaults = {
@@ -15,6 +16,7 @@ const defaults = {
   shopAddress: "123 Repair Street, City, State 12345",
   shopPhone: "(555) 987-6543",
   currency: "PKR",
+  navPrice: "1000.00",
 }
 
 export async function getSettings(): Promise<ShopSettings> {

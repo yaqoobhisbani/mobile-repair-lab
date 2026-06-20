@@ -31,13 +31,6 @@ export interface BusinessMemberDetail {
     fundingSource: string
     createdAt: string
   }[]
-  dividends: {
-    id: number
-    amount: string
-    payoutDate: string
-    shareholdingPercentage: string
-    notes: string | null
-  }[]
 }
 
 export function useBusinessMember(id: number) {

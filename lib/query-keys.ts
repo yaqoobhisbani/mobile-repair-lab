@@ -45,11 +45,8 @@ export const queryKeys = {
       all: ["business", "assets"] as const,
       detail: (id: number) => ["business", "assets", id] as const,
     },
-    shares: {
-      all: ["business", "shares"] as const,
-    },
-    dividends: {
-      all: ["business", "dividends"] as const,
-    },
+      shares: {
+        all: ["business", "shares"] as const,
+      },
   },
 }

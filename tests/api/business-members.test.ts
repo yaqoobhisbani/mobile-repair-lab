@@ -58,7 +58,7 @@ describe("Business Members API", () => {
       expect(data.sharesOwned).toBeDefined()
       expect(data.transactions).toBeDefined()
       expect(data.assets).toBeDefined()
-      expect(data.dividends).toBeDefined()
+      expect(data.assets).toBeDefined()
     })
 
     it("returns 404 for non-existent member", async () => {

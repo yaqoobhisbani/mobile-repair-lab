@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context"
 import { usePrivacyMode } from "@/lib/privacy-mode-context"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
+import { PortalSwitcher } from "@/components/portal-switcher"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,7 +41,6 @@ import {
   Ticket,
   Eye,
   EyeOff,
-  Briefcase,
 } from "lucide-react"
 
 interface NavItem {
@@ -202,6 +202,8 @@ export function DashboardHeader() {
           )}
         </div>
 
+        <PortalSwitcher />
+
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -242,10 +244,6 @@ export function DashboardHeader() {
               <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/business")}>
-                <Briefcase className="h-4 w-4 mr-2" />
-                Business Portal
               </DropdownMenuItem>
               <DropdownMenuItem onClick={togglePrivacy}>
                 {privacyMode ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}

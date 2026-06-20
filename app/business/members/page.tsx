@@ -7,24 +7,27 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DataTablePagination } from "@/components/data-table-pagination"
-import { Plus, Search, X, Edit, Trash2, Eye, Users, Loader2 } from "lucide-react"
+import { Plus, Search, X, Pencil, Trash2, Eye, Users, Loader2, UserPlus, IdCard } from "lucide-react"
 import { PageTransition } from "@/components/page-transition"
+import { AnimatedCounter } from "@/components/animated-counter"
 import { PrivacyAmount } from "@/components/privacy-amount"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/empty-state"
+import { SlideOver } from "@/components/slide-over"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useBusinessMembers } from "@/hooks/queries/use-business-members"
 import { useCreateBusinessMember } from "@/hooks/mutations/use-create-business-member"
 import { useUpdateBusinessMember } from "@/hooks/mutations/use-update-business-member"
 import { useDeleteBusinessMember } from "@/hooks/mutations/use-delete-business-member"
+import { useNavPrice } from "@/hooks/queries/use-nav-price"
 
 export default function MembersPage() {
   const router = useRouter()
   const { data: members = [], isLoading } = useBusinessMembers()
+  const navPrice = useNavPrice()
   const createMember = useCreateBusinessMember()
   const updateMember = useUpdateBusinessMember()
   const deleteMember = useDeleteBusinessMember()
@@ -33,7 +36,7 @@ export default function MembersPage() {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [slideOverOpen, setSlideOverOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", role: "partner" })
@@ -55,7 +58,7 @@ export default function MembersPage() {
   function openCreateDialog() {
     setEditingMember(null)
     setFormData({ name: "", email: "", phone: "", role: "partner" })
-    setDialogOpen(true)
+    setSlideOverOpen(true)
   }
 
   function openEditDialog(member: any) {
@@ -66,7 +69,12 @@ export default function MembersPage() {
       phone: member.phone ?? "",
       role: member.role,
     })
-    setDialogOpen(true)
+    setSlideOverOpen(true)
+  }
+
+  function closeSlide() {
+    setSlideOverOpen(false)
+    setEditingMember(null)
   }
 
   async function handleSave() {
@@ -83,7 +91,7 @@ export default function MembersPage() {
         await createMember.mutateAsync(formData)
         toast.success("Member created")
       }
-      setDialogOpen(false)
+      closeSlide()
     } catch (e: any) {
       toast.error(e.message)
     } finally {
@@ -120,7 +128,7 @@ export default function MembersPage() {
               </>
             ) : (
               <>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">Members</h1>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Members</h1>
                 <p className="text-sm text-muted-foreground">Manage business partners, owners, and investors.</p>
               </>
             )}
@@ -130,6 +138,53 @@ export default function MembersPage() {
             Add Member
           </Button>
         </div>
+
+        {!isLoading && members.length > 0 && (
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+            <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/60 dark:to-background border-violet-100 dark:border-violet-900/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Members</CardTitle>
+                <Users className="h-4 w-4 text-violet-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold"><AnimatedCounter to={members.length} /></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/60 dark:to-background border-blue-100 dark:border-blue-900/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Owners</CardTitle>
+                <IdCard className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  <AnimatedCounter to={members.filter((m) => m.role === "owner").length} />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/60 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Partners</CardTitle>
+                <UserPlus className="h-4 w-4 text-emerald-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  <AnimatedCounter to={members.filter((m) => m.role === "partner").length} />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/60 dark:to-background border-amber-100 dark:border-amber-900/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Investors</CardTitle>
+                <UserPlus className="h-4 w-4 text-amber-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  <AnimatedCounter to={members.filter((m) => m.role === "investor").length} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -194,19 +249,19 @@ export default function MembersPage() {
                           <TableCell className="text-muted-foreground text-sm">{formatDate(member.createdAt)}</TableCell>
                           <TableCell className="text-right">{parseFloat(member.sharesOwned).toFixed(2)}</TableCell>
                           <TableCell className="text-right">
-                            <PrivacyAmount>Rs. {(parseFloat(member.sharesOwned) * 1000).toLocaleString()}</PrivacyAmount>
+                            <PrivacyAmount>Rs. {(parseFloat(member.sharesOwned) * navPrice).toLocaleString()}</PrivacyAmount>
                           </TableCell>
                           <TableCell className="text-right">{member.assetCount ?? 0}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => router.push(`/business/members/${member.id}`)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => router.push(`/business/members/${member.id}`)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => openEditDialog(member)}>
-                                <Edit className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(member)}>
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id, member.name)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(member.id, member.name)}>
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -229,50 +284,48 @@ export default function MembersPage() {
         </Card>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingMember ? "Edit Member" : "Add Member"}</DialogTitle>
-            <DialogDescription>
-              {editingMember ? "Update member details." : "Add a new partner, owner, or investor."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Full name" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+92 300 1234567" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="partner">Partner</SelectItem>
-                  <SelectItem value="investor">Investor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {editingMember ? "Update" : "Create"}
-              </Button>
-            </div>
+      <SlideOver
+        open={slideOverOpen}
+        onOpenChange={(open) => { if (!open) closeSlide() }}
+        title={editingMember ? "Edit Member" : "Add Member"}
+        description={editingMember ? "Update member details." : "Add a new partner, owner, or investor."}
+        gradient="members"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name *</Label>
+            <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Full name" />
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+92 300 1234567" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner">Owner</SelectItem>
+                <SelectItem value="partner">Partner</SelectItem>
+                <SelectItem value="investor">Investor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={closeSlide}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {editingMember ? "Update" : "Create"}
+            </Button>
+          </div>
+        </div>
+      </SlideOver>
 
       {confirmDialog}
     </PageTransition>
