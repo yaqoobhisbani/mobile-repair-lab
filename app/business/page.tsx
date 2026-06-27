@@ -138,36 +138,38 @@ export default function BusinessOverview() {
         </StaggerContainer>
 
         <StaggerContainer className="grid gap-4 lg:grid-cols-2">
-          <StaggerItem>
-            <Card>
+          <StaggerItem className="min-w-0">
+            <Card className="min-w-0 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-base">Shareholding Distribution</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-hidden">
                 {pieData.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">No shares issued yet.</p>
                 ) : (
-                  <div className="flex flex-col items-center">
-                    <ResponsiveContainer width="100%" height={250}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          dataKey="value"
-                          nameKey="name"
-                          label={({ name, percent }) => `${name} (${percent}%)`}
-                          labelLine
-                        >
-                          {pieData.map((_, index) => (
-                            <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => typeof value === "number" ? value.toLocaleString() : value} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className="flex flex-col items-center w-full overflow-hidden">
+                    <div className="w-full overflow-hidden">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={85}
+                            dataKey="value"
+                            nameKey="name"
+                            label={({ name, percent }) => `${name} (${percent}%)`}
+                            labelLine
+                          >
+                            {pieData.map((_, index) => (
+                              <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => typeof value === "number" ? value.toLocaleString() : value} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
                     <div className="grid grid-cols-2 gap-2 w-full mt-4">
                       {pieData.map((entry, index) => (
                         <div key={entry.name} className="flex items-center gap-2 text-xs">
@@ -182,28 +184,30 @@ export default function BusinessOverview() {
               </CardContent>
             </Card>
           </StaggerItem>
-          <StaggerItem>
-            <Card>
+          <StaggerItem className="min-w-0">
+            <Card className="min-w-0 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-base">Asset Portfolio Value</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center">
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={barData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="name" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip formatter={(value) => typeof value === "number" ? `Rs. ${value.toLocaleString()}` : value} />
-                      <Bar dataKey="value" fill="url(#assetGradient)" radius={[4, 4, 0, 0]} />
-                      <defs>
-                        <linearGradient id="assetGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#06b6d4" />
-                          <stop offset="100%" stopColor="#0891b2" />
-                        </linearGradient>
-                      </defs>
-                    </BarChart>
-                  </ResponsiveContainer>
+              <CardContent className="overflow-hidden">
+                <div className="flex flex-col items-center w-full overflow-hidden">
+                  <div className="w-full overflow-hidden">
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }} data={barData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis dataKey="name" className="text-xs" />
+                        <YAxis className="text-xs" />
+                        <Tooltip formatter={(value) => typeof value === "number" ? `Rs. ${value.toLocaleString()}` : value} />
+                        <Bar dataKey="value" fill="url(#assetGradient)" radius={[4, 4, 0, 0]} />
+                        <defs>
+                          <linearGradient id="assetGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#06b6d4" />
+                            <stop offset="100%" stopColor="#0891b2" />
+                          </linearGradient>
+                        </defs>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                   <div className="flex items-center justify-center gap-8 w-full mt-4">
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">Assets Value</p>

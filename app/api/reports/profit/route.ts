@@ -144,8 +144,8 @@ export async function GET(request: Request) {
 
     for (const [, tx] of netByRef) {
       if (tx.referenceType !== "expense") continue
-      const amount = tx.netAmount
-      if (amount <= 0) continue
+      const amount = Math.abs(tx.netAmount)
+      if (amount === 0) continue
       const meta = expenseMeta.get(Number(tx.referenceId))
       const key = keyFromDate(tx.date)
       expensesByPeriod.set(key, (expensesByPeriod.get(key) ?? 0) + amount)
