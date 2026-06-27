@@ -35,4 +35,18 @@ export const queryKeys = {
   invoices: {
     byTicket: (ticketId: string) => ["invoices", ticketId] as const,
   },
+  business: {
+    dashboard: ["business", "dashboard"] as const,
+    members: {
+      all: ["business", "members"] as const,
+      detail: (id: number) => ["business", "members", id] as const,
+    },
+    assets: {
+      all: ["business", "assets"] as const,
+      detail: (id: number) => ["business", "assets", id] as const,
+    },
+      shares: {
+        all: ["business", "shares"] as const,
+      },
+  },
 }

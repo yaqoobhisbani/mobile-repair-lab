@@ -13,13 +13,14 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { shopName, shopAddress, shopPhone, currency } = body
+    const { shopName, shopAddress, shopPhone, currency, navPrice } = body
 
     const data: Record<string, string> = {}
     if (shopName?.trim()) data.shopName = shopName.trim()
     if (shopAddress?.trim()) data.shopAddress = shopAddress.trim()
     if (shopPhone?.trim()) data.shopPhone = shopPhone.trim()
     if (currency?.trim()) data.currency = currency.trim()
+    if (navPrice) data.navPrice = String(navPrice)
 
     const settings = await upsertSettings(data)
     return NextResponse.json({ settings })

@@ -160,6 +160,7 @@ export const settings = pgTable("settings", {
   shopAddress: varchar("shop_address", { length: 500 }).notNull().default("123 Repair Street, City, State 12345"),
   shopPhone: varchar("shop_phone", { length: 50 }).notNull().default("(555) 987-6543"),
   currency: varchar("currency", { length: 10 }).notNull().default("PKR"),
+  navPrice: decimal("nav_price", { precision: 12, scale: 2 }).notNull().default("1000.00"),
 })
 
 export const saleOrders = pgTable("sale_orders", {
@@ -200,3 +201,54 @@ export const transactions = pgTable("transactions", {
   referenceId: varchar("reference_id", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// ── Business Management Portal ──────────────────────────────────────────
+
+export const businessMembers = pgTable("business_members", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  role: varchar("role", { length: 100 }).notNull().default("partner"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const businessAssets = pgTable("business_assets", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  costPrice: decimal("cost_price", { precision: 12, scale: 2 }).notNull(),
+  purchaseDate: timestamp("purchase_date").defaultNow().notNull(),
+  purchasedByMemberId: integer("purchased_by_member_id").references(
+    () => businessMembers.id,
+    { onDelete: "set null" }
+  ),
+  fundingSource: varchar("funding_source", { length: 50 })
+    .notNull()
+    .default("member_equity"),
+  depreciationRate: decimal("depreciation_rate", { precision: 5, scale: 2 }).default("0.00"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const shareTransactions = pgTable("share_transactions", {
+  id: serial("id").primaryKey(),
+  transactionType: varchar("transaction_type", { length: 50 }).notNull(),
+  sellerMemberId: integer("seller_member_id").references(
+    () => businessMembers.id,
+    { onDelete: "cascade" }
+  ),
+  buyerMemberId: integer("buyer_member_id").references(
+    () => businessMembers.id,
+    { onDelete: "cascade" }
+  ),
+  sharesCount: decimal("shares_count", { precision: 16, scale: 6 }).notNull(),
+  pricePerShare: decimal("price_per_share", { precision: 12, scale: 4 })
+    .notNull()
+    .default("1000.0000"),
+  totalAmount: decimal("total_amount", { precision: 16, scale: 4 }).notNull(),
+  transactionDate: timestamp("transaction_date").defaultNow().notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+

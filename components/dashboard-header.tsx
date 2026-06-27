@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context"
 import { usePrivacyMode } from "@/lib/privacy-mode-context"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
+import { PortalSwitcher } from "@/components/portal-switcher"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -200,6 +201,8 @@ export function DashboardHeader() {
             </nav>
           )}
         </div>
+
+        <PortalSwitcher />
 
         <div className="flex items-center gap-1">
           <Button
